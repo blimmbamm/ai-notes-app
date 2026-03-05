@@ -3,7 +3,6 @@ package com.example.notesapp.controller;
 import com.example.notesapp.service.TagService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -19,7 +18,7 @@ public class TagController {
     }
 
     @GetMapping
-    public List<String> search(@RequestParam(defaultValue = "") String query) {
-        return tagService.search(query);
+    public List<String> listAll() {
+        return tagService.listAll();
     }
 }

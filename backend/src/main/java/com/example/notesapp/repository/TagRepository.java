@@ -9,6 +9,6 @@ import java.util.List;
 
 public interface TagRepository extends JpaRepository<TagEntity, Long> {
     List<TagEntity> findByUserAndNameIn(UserEntity user, Collection<String> names);
-    List<TagEntity> findTop20ByUserAndNameContainingIgnoreCaseOrderByNameAsc(UserEntity user, String query);
+    List<TagEntity> findByUserOrderByNameAsc(UserEntity user);
     void deleteByUser(UserEntity user);
 }

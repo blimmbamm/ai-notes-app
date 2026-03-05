@@ -19,11 +19,10 @@ public class TagService {
     }
 
     @Transactional(readOnly = true)
-    public List<String> search(String query) {
+    public List<String> listAll() {
         UserEntity user = currentUserService.getCurrentUser();
-        String normalizedQuery = query == null ? "" : query.trim();
 
-        return tagRepository.findTop20ByUserAndNameContainingIgnoreCaseOrderByNameAsc(user, normalizedQuery)
+        return tagRepository.findByUserOrderByNameAsc(user)
                 .stream()
                 .map(tag -> tag.getName())
                 .toList();
