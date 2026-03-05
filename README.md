@@ -4,7 +4,7 @@ Fullstack notes app with signup/login, email verification via SMTP4DEV, JWT acce
 
 ## Stack
 - Frontend: React (Vite), Material UI, TanStack Query
-- Backend: Spring Boot 3 (Java 17, Maven), Spring Security, JPA, Lombok
+- Backend: Spring Boot 3 (Java 17, Maven), Spring Security, JPA, Flyway, Lombok
 - Database: PostgreSQL
 - Infra: Docker Compose, Nginx reverse proxy, SMTP4DEV
 
@@ -45,6 +45,22 @@ You do not need CORS for this dev setup, because Vite proxies `/api` to `http://
 From the browser perspective, requests still go to the Vite origin, so there is no cross-origin request.
 
 You only need CORS if frontend and backend are called from different origins directly (without proxy/reverse-proxy).
+
+## DB Migrations (Flyway)
+Migration files go here:
+- `backend/src/main/resources/db/migration`
+
+Naming pattern:
+- `V1__description.sql`
+- `V2__description.sql`
+- and so on
+
+How to run migrations:
+- Migrations run automatically when backend starts (`mvn spring-boot:run` or Docker backend startup).
+- Flyway tracks applied scripts in table `flyway_schema_history` and only runs each version once.
+
+Current cleanup migration:
+- `V1__remove_old_note_color_schema.sql` (drops old `note_color_id` and `note_colors` if present).
 
 ## Auth Flow
 1. Sign up in the UI.
