@@ -1,6 +1,6 @@
 import { Alert, Box, Button, Link, TextField } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { SubmitEvent, useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import { login, type LoginRequest } from "../api/authApi";
@@ -24,7 +24,7 @@ export default function LoginPage() {
     <AuthLayout title="Login">
       <Box
         component="form"
-        onSubmit={(event: FormEvent<HTMLFormElement>) => {
+        onSubmit={(event: SubmitEvent<HTMLFormElement>) => {
           event.preventDefault();
           mutation.mutate(form);
         }}

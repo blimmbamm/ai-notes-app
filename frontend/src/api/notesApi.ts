@@ -1,5 +1,5 @@
 import { mapNoteFromApi, mapNoteInputToApi, mapNotesFromApi } from "../mappers/notesMapper";
-import type { ApiMessageResponse, ApiNote, Note, NoteInput } from "../types/api";
+import type { ApiNote, Note, NoteInput } from "../types/api";
 import type { AuthSession } from "../types/auth";
 import { apiFetch } from "./client";
 
@@ -33,8 +33,8 @@ export function updateNote(id: number, payload: NoteInput, auth: AuthSession): P
   );
 }
 
-export function deleteNote(id: number, auth: AuthSession): Promise<ApiMessageResponse> {
-  return apiFetch<ApiMessageResponse>(
+export function deleteNote(id: number, auth: AuthSession): Promise<void> {
+  return apiFetch<never, void>(
     `/notes/${id}`,
     {
       method: "DELETE",

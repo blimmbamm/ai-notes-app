@@ -95,7 +95,7 @@ export async function apiFetch<TApi, TModel = TApi>(
   }
 
   if (data === null) {
-    throw new Error("Unexpected empty response from server");
+    return undefined as TModel;
   }
 
   if (mapResponse) {
