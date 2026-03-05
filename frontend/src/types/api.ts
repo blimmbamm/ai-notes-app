@@ -1,0 +1,48 @@
+export interface ApiErrorResponse {
+  timestamp: string;
+  status: number;
+  message: string;
+  errors?: Record<string, string>;
+}
+
+export interface ApiMessageResponse {
+  message: string;
+}
+
+export interface ApiAuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  expiresInSeconds: number;
+}
+
+export interface ApiNote {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiNoteRequest {
+  title: string;
+  content: string;
+}
+
+export type MapIsoDateFields<T, K extends keyof T> = Omit<T, K> & {
+  [P in K]: Date;
+};
+
+export type Note = MapIsoDateFields<ApiNote, "createdAt" | "updatedAt">;
+
+export interface NoteInput {
+  title: string;
+  content: string;
+}
+
+export interface AuthTokensResponse {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  expiresInSeconds: number;
+}

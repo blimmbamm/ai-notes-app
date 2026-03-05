@@ -1,16 +1,18 @@
 import { createContext, useContext, useMemo, useState } from "react";
+import type { PropsWithChildren } from "react";
+import type { AuthContextValue } from "../types/auth";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function readToken(key) {
+function readToken(key: "accessToken" | "refreshToken"): string {
   return localStorage.getItem(key) || "";
 }
 
-export function AuthProvider({ children }) {
-  const [accessToken, setAccessToken] = useState(() => readToken("accessToken"));
-  const [refreshToken, setRefreshToken] = useState(() => readToken("refreshToken"));
+export function AuthProvider({ children }: PropsWithChildren) {
+  const [accessToken, setAccessToken] = useState<string>(() => readToken("accessToken"));
+  const [refreshToken, setRefreshToken] = useState<string>(() => readToken("refreshToken"));
 
-  const setTokens = (nextAccessToken, nextRefreshToken) => {
+  const setTokens = (nextAccessToken: string, nextRefreshToken: string) => {
     setAccessToken(nextAccessToken || "");
     setRefreshToken(nextRefreshToken || "");
 
@@ -29,11 +31,11 @@ export function AuthProvider({ children }) {
 
   const logout = () => setTokens("", "");
 
-  const value = useMemo(
+  const value = useMemo<AuthContextValue>(
     () => ({
       accessToken,
       refreshToken,
-      isAuthenticated: Boolean(accessToken),
+      isAuthenticated: Boolean(accessToken) && Boolean(refreshToken),
       setTokens,
       logout,
     }),
@@ -43,10 +45,11 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used inside AuthProvider");
   }
+
   return context;
 }

@@ -1,12 +1,13 @@
 import { Alert, Box, Button, Link, TextField } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
-import { signup } from "../api/authApi";
+import { signup, type SignupRequest } from "../api/authApi";
+import { getErrorMessage } from "../utils/error";
 
 export default function SignupPage() {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState<SignupRequest>({ email: "", password: "" });
 
   const mutation = useMutation({
     mutationFn: signup,
@@ -14,10 +15,13 @@ export default function SignupPage() {
 
   return (
     <AuthLayout title="Create account">
-      <Box component="form" onSubmit={(event) => {
-        event.preventDefault();
-        mutation.mutate(form);
-      }}>
+      <Box
+        component="form"
+        onSubmit={(event: FormEvent<HTMLFormElement>) => {
+          event.preventDefault();
+          mutation.mutate(form);
+        }}
+      >
         <TextField
           fullWidth
           label="Email"
@@ -36,8 +40,16 @@ export default function SignupPage() {
           onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
         />
 
-        {mutation.isError && <Alert severity="error" sx={{ mt: 2 }}>{mutation.error.message}</Alert>}
-        {mutation.isSuccess && <Alert severity="success" sx={{ mt: 2 }}>Signup succeeded. Check SMTP4DEV mail and verify your email.</Alert>}
+        {mutation.isError && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {getErrorMessage(mutation.error)}
+          </Alert>
+        )}
+        {mutation.isSuccess && (
+          <Alert severity="success" sx={{ mt: 2 }}>
+            Signup succeeded. Check SMTP4DEV mail and verify your email.
+          </Alert>
+        )}
 
         <Button fullWidth variant="contained" type="submit" sx={{ mt: 2 }} disabled={mutation.isPending}>
           {mutation.isPending ? "Creating account..." : "Sign up"}
