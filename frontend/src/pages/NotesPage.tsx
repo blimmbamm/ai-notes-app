@@ -15,6 +15,7 @@ import {
   IconButton,
   InputLabel,
   MenuItem,
+  Popover,
   Select,
   Stack,
   TextField,
@@ -24,14 +25,16 @@ import Grid from "@mui/material/Grid2";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
+import PaletteIcon from "@mui/icons-material/Palette";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type MouseEvent } from "react";
 import type { Note, NoteInput } from "../types/api";
 import { createNote, deleteNote, getNotes, updateNote } from "../api/notesApi";
 import { logout as logoutApi } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../utils/error";
 import AppTopBar from "../components/AppTopBar";
+import { NOTE_COLORS } from "../constants/noteColors";
 
 type SortOrder = "desc" | "asc";
 
@@ -46,11 +49,13 @@ export default function NotesPage() {
   const auth = useAuth();
   const queryClient = useQueryClient();
 
-  const [form, setForm] = useState<NoteInput>({ title: "", content: "" });
+  const [form, setForm] = useState<NoteInput>({ title: "", content: "", colorHex: null });
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState<Note | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => readSortOrder());
+  const [paletteAnchorEl, setPaletteAnchorEl] = useState<HTMLElement | null>(null);
+  const [paletteNote, setPaletteNote] = useState<Note | null>(null);
 
   useEffect(() => {
     localStorage.setItem(NOTE_SORT_ORDER_KEY, sortOrder);
@@ -99,6 +104,24 @@ export default function NotesPage() {
     },
   });
 
+  const colorMutation = useMutation({
+    mutationFn: ({ note, colorHex }: { note: Note; colorHex: string | null }) =>
+      updateNote(
+        note.id,
+        {
+          title: note.title,
+          content: note.content,
+          colorHex,
+        },
+        authPayload
+      ),
+    onSuccess: async () => {
+      setPaletteAnchorEl(null);
+      setPaletteNote(null);
+      await queryClient.refetchQueries({ queryKey: ["notes"] });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteNote(id, authPayload),
     onSuccess: async () => {
@@ -133,7 +156,7 @@ export default function NotesPage() {
     createMutation.reset();
     updateMutation.reset();
     setEditingNoteId(null);
-    setForm({ title: "", content: "" });
+    setForm({ title: "", content: "", colorHex: null });
     setIsNoteDialogOpen(true);
   }
 
@@ -141,14 +164,19 @@ export default function NotesPage() {
     createMutation.reset();
     updateMutation.reset();
     setEditingNoteId(note.id);
-    setForm({ title: note.title, content: note.content });
+    setForm({ title: note.title, content: note.content, colorHex: note.colorHex });
     setIsNoteDialogOpen(true);
   }
 
   function closeNoteDialog() {
     setIsNoteDialogOpen(false);
     setEditingNoteId(null);
-    setForm({ title: "", content: "" });
+    setForm({ title: "", content: "", colorHex: null });
+  }
+
+  function openPalette(event: MouseEvent<HTMLElement>, note: Note) {
+    setPaletteAnchorEl(event.currentTarget);
+    setPaletteNote(note);
   }
 
   return (
@@ -181,16 +209,20 @@ export default function NotesPage() {
           {notesQuery.isPending && <CircularProgress />}
           {notesQuery.isError && <Alert severity="error">{getErrorMessage(notesQuery.error)}</Alert>}
           {deleteMutation.isError && <Alert severity="error">{getErrorMessage(deleteMutation.error)}</Alert>}
+          {colorMutation.isError && <Alert severity="error">{getErrorMessage(colorMutation.error)}</Alert>}
 
           {notesQuery.isSuccess && (
             <Grid container spacing={2}>
               {sortedNotes.map((note) => (
                 <Grid size={{ xs: 12, md: 6 }} key={note.id}>
-                  <Card>
+                  <Card sx={{ backgroundColor: note.colorHex ?? "background.paper" }}>
                     <CardContent>
                       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                         <Typography variant="h6">{note.title}</Typography>
                         <Stack direction="row" spacing={1}>
+                          <IconButton size="small" onClick={(event) => openPalette(event, note)}>
+                            <PaletteIcon fontSize="small" />
+                          </IconButton>
                           <IconButton size="small" onClick={() => openEditDialog(note)}>
                             <EditIcon fontSize="small" />
                           </IconButton>
@@ -235,6 +267,30 @@ export default function NotesPage() {
               value={form.content}
               onChange={(event) => setForm((prev) => ({ ...prev, content: event.target.value }))}
             />
+            <Stack direction="row" spacing={1} sx={{ mt: 2 }} flexWrap="wrap" useFlexGap>
+              <Button
+                size="small"
+                variant={form.colorHex === null ? "contained" : "outlined"}
+                onClick={() => setForm((prev) => ({ ...prev, colorHex: null }))}
+              >
+                No color
+              </Button>
+              {NOTE_COLORS.map((color) => (
+                <IconButton
+                  key={color}
+                  size="small"
+                  onClick={() => setForm((prev) => ({ ...prev, colorHex: color }))}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    border: "1px solid",
+                    borderColor: form.colorHex === color ? "text.primary" : "divider",
+                    backgroundColor: color,
+                    borderWidth: form.colorHex === color ? 2 : 1,
+                  }}
+                />
+              ))}
+            </Stack>
             {formErrorMessage && (
               <Alert severity="error" sx={{ mt: 2 }}>
                 {formErrorMessage}
@@ -253,6 +309,52 @@ export default function NotesPage() {
           </DialogActions>
         </Box>
       </Dialog>
+
+      <Popover
+        open={Boolean(paletteAnchorEl) && Boolean(paletteNote)}
+        anchorEl={paletteAnchorEl}
+        onClose={() => {
+          if (!colorMutation.isPending) {
+            setPaletteAnchorEl(null);
+            setPaletteNote(null);
+          }
+        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      >
+        <Stack direction="row" spacing={1} sx={{ p: 1.5 }}>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={!paletteNote || colorMutation.isPending}
+            onClick={() => {
+              if (paletteNote) {
+                colorMutation.mutate({ note: paletteNote, colorHex: null });
+              }
+            }}
+          >
+            None
+          </Button>
+          {NOTE_COLORS.map((color) => (
+            <IconButton
+              key={color}
+              size="small"
+              disabled={!paletteNote || colorMutation.isPending}
+              onClick={() => {
+                if (paletteNote) {
+                  colorMutation.mutate({ note: paletteNote, colorHex: color });
+                }
+              }}
+              sx={{
+                width: 26,
+                height: 26,
+                border: "1px solid",
+                borderColor: "divider",
+                backgroundColor: color,
+              }}
+            />
+          ))}
+        </Stack>
+      </Popover>
 
       <Dialog
         open={deleteCandidate !== null}

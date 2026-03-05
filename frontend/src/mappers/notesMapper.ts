@@ -5,6 +5,7 @@ export function mapNoteFromApi(api: ApiNote): Note {
     id: api.id,
     title: api.title,
     content: api.content,
+    colorHex: api.colorHex,
     createdAt: new Date(api.createdAt),
     updatedAt: new Date(api.updatedAt),
   };
@@ -18,5 +19,6 @@ export function mapNoteInputToApi(input: NoteInput): ApiNoteRequest {
   return {
     title: input.title,
     content: input.content,
+    colorHex: input.colorHex,
   };
 }

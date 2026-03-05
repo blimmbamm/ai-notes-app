@@ -34,6 +34,9 @@ public class NoteEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
+    @Column(name = "notes_color", length = 7)
+    private String notesColor;
+
     @Column(nullable = false, length = 140)
     private String title;
 

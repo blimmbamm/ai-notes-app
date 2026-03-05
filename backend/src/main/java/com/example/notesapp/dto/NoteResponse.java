@@ -6,6 +6,7 @@ public record NoteResponse(
         Long id,
         String title,
         String content,
+        String colorHex,
         Instant createdAt,
         Instant updatedAt
 ) {

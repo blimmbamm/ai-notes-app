@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class NoteService {
@@ -18,7 +19,8 @@ public class NoteService {
     private final NoteRepository noteRepository;
     private final CurrentUserService currentUserService;
 
-    public NoteService(NoteRepository noteRepository, CurrentUserService currentUserService) {
+    public NoteService(NoteRepository noteRepository,
+                       CurrentUserService currentUserService) {
         this.noteRepository = noteRepository;
         this.currentUserService = currentUserService;
     }
@@ -39,6 +41,7 @@ public class NoteService {
 
         NoteEntity note = NoteEntity.builder()
                 .user(user)
+                .notesColor(normalizeColor(request.colorHex()))
                 .title(request.title().trim())
                 .content(request.content().trim())
                 .createdAt(now)
@@ -56,6 +59,7 @@ public class NoteService {
 
         note.setTitle(request.title().trim());
         note.setContent(request.content().trim());
+        note.setNotesColor(normalizeColor(request.colorHex()));
         note.setUpdatedAt(Instant.now());
 
         return toResponse(noteRepository.save(note));
@@ -69,11 +73,20 @@ public class NoteService {
         noteRepository.delete(note);
     }
 
+    private String normalizeColor(String colorHex) {
+        if (colorHex == null || colorHex.isBlank()) {
+            return null;
+        }
+
+        return colorHex.trim().toLowerCase(Locale.ROOT);
+    }
+
     private NoteResponse toResponse(NoteEntity note) {
         return new NoteResponse(
                 note.getId(),
                 note.getTitle(),
                 note.getContent(),
+                note.getNotesColor(),
                 note.getCreatedAt(),
                 note.getUpdatedAt());
     }

@@ -20,6 +20,7 @@ export interface ApiNote {
   id: number;
   title: string;
   content: string;
+  colorHex: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,6 +28,7 @@ export interface ApiNote {
 export interface ApiNoteRequest {
   title: string;
   content: string;
+  colorHex: string | null;
 }
 
 export interface ApiAccountResponse {
@@ -44,6 +46,7 @@ export type AccountProfile = MapIsoDateFields<ApiAccountResponse, "createdAt">;
 export interface NoteInput {
   title: string;
   content: string;
+  colorHex: string | null;
 }
 
 export interface AuthTokensResponse {
