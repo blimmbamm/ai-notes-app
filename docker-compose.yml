@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: notesdb
+      POSTGRES_USER: notes
+      POSTGRES_PASSWORD: notes
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  smtp4dev:
+    image: rnwood/smtp4dev:v3
+    ports:
+      - "5000:80"
+      - "1025:25"
+
+  backend:
+    build:
+      context: ./backend
+    depends_on:
+      - postgres
+      - smtp4dev
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notesdb
+      SPRING_DATASOURCE_USERNAME: notes
+      SPRING_DATASOURCE_PASSWORD: notes
+      SPRING_MAIL_HOST: smtp4dev
+      SPRING_MAIL_PORT: 25
+      FRONTEND_URL: http://localhost
+      JWT_SECRET: change-this-secret-to-a-long-random-value-change-this-secret
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:

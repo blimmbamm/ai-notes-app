@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/notesdb}
+    username: ${SPRING_DATASOURCE_USERNAME:notes}
+    password: ${SPRING_DATASOURCE_PASSWORD:notes}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost}
+  jwt:
+    secret: ${JWT_SECRET:change-this-secret-to-a-long-random-value-change-this-secret}
+    access-token-minutes: 15
+    refresh-token-days: 14
