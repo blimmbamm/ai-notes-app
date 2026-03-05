@@ -7,3 +7,6 @@ build/
 *.log
 backend/target/
 .env
+
+instructions.md
+instructions_later.md
