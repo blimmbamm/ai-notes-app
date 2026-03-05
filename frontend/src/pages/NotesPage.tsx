@@ -1,6 +1,5 @@
 import {
   Alert,
-  AppBar,
   Box,
   Button,
   Card,
@@ -19,7 +18,6 @@ import {
   Select,
   Stack,
   TextField,
-  Toolbar,
   Typography,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
@@ -33,6 +31,7 @@ import { createNote, deleteNote, getNotes, updateNote } from "../api/notesApi";
 import { logout as logoutApi } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../utils/error";
+import AppTopBar from "../components/AppTopBar";
 
 type SortOrder = "desc" | "asc";
 
@@ -154,16 +153,7 @@ export default function NotesPage() {
 
   return (
     <Box>
-      <AppBar position="static" color="primary">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Notes App
-          </Typography>
-          <Button color="inherit" onClick={() => logoutMutation.mutate()} disabled={logoutMutation.isPending}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
+      <AppTopBar onLogout={() => logoutMutation.mutate()} logoutDisabled={logoutMutation.isPending} />
 
       <Container sx={{ py: { xs: 2, md: 4 } }}>
         <Stack spacing={3}>

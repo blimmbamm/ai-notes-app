@@ -29,5 +29,8 @@ public class AppProperties {
 
         @Min(1)
         private long refreshTokenDays = 14;
+
+        @Min(1)
+        private long resetTokenMinutes = 60;
     }
 }

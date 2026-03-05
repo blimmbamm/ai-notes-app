@@ -4,13 +4,16 @@ import com.example.notesapp.config.AppProperties;
 import com.example.notesapp.dto.AuthResponse;
 import com.example.notesapp.dto.LoginRequest;
 import com.example.notesapp.dto.LogoutRequest;
+import com.example.notesapp.dto.PasswordResetConfirmRequest;
 import com.example.notesapp.dto.RefreshRequest;
 import com.example.notesapp.dto.SignupRequest;
 import com.example.notesapp.entity.EmailVerificationTokenEntity;
+import com.example.notesapp.entity.PasswordResetTokenEntity;
 import com.example.notesapp.entity.RefreshTokenEntity;
 import com.example.notesapp.entity.UserEntity;
 import com.example.notesapp.exception.BadRequestException;
 import com.example.notesapp.repository.EmailVerificationTokenRepository;
+import com.example.notesapp.repository.PasswordResetTokenRepository;
 import com.example.notesapp.repository.RefreshTokenRepository;
 import com.example.notesapp.repository.UserRepository;
 import com.example.notesapp.security.JwtService;
@@ -30,6 +33,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final EmailVerificationTokenRepository verificationTokenRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -39,6 +43,7 @@ public class AuthService {
     public AuthService(UserRepository userRepository,
                        EmailVerificationTokenRepository verificationTokenRepository,
                        RefreshTokenRepository refreshTokenRepository,
+                       PasswordResetTokenRepository passwordResetTokenRepository,
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
                        JwtService jwtService,
@@ -47,6 +52,7 @@ public class AuthService {
         this.userRepository = userRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
@@ -127,6 +133,42 @@ public class AuthService {
     @Transactional
     public void logout(LogoutRequest request) {
         refreshTokenRepository.deleteByToken(request.refreshToken());
+    }
+
+    @Transactional
+    public void requestPasswordReset(String email) {
+        userRepository.findByEmailIgnoreCase(email.trim().toLowerCase()).ifPresent(user -> {
+            passwordResetTokenRepository.deleteByUser(user);
+
+            String token = UUID.randomUUID().toString() + UUID.randomUUID();
+            PasswordResetTokenEntity resetToken = PasswordResetTokenEntity.builder()
+                    .user(user)
+                    .token(token)
+                    .expiresAt(Instant.now().plus(appProperties.getJwt().getResetTokenMinutes(), ChronoUnit.MINUTES))
+                    .build();
+            passwordResetTokenRepository.save(resetToken);
+
+            String resetUrl = appProperties.getFrontendUrl() + "/reset-password?token=" + token;
+            emailService.send(user.getEmail(), "Reset your password", "Click this link to reset your password: " + resetUrl);
+        });
+    }
+
+    @Transactional
+    public void confirmPasswordReset(PasswordResetConfirmRequest request) {
+        PasswordResetTokenEntity resetToken = passwordResetTokenRepository.findByToken(request.token())
+                .orElseThrow(() -> new BadRequestException("Invalid password reset token"));
+
+        if (resetToken.getExpiresAt().isBefore(Instant.now())) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new BadRequestException("Password reset token expired");
+        }
+
+        UserEntity user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        userRepository.save(user);
+
+        refreshTokenRepository.deleteByUser(user);
+        passwordResetTokenRepository.deleteByUser(user);
     }
 
     private AuthResponse issueTokens(UserEntity user) {

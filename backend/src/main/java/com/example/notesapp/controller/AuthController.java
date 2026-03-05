@@ -4,6 +4,8 @@ import com.example.notesapp.dto.AuthResponse;
 import com.example.notesapp.dto.LoginRequest;
 import com.example.notesapp.dto.LogoutRequest;
 import com.example.notesapp.dto.MessageResponse;
+import com.example.notesapp.dto.PasswordResetConfirmRequest;
+import com.example.notesapp.dto.PasswordResetRequest;
 import com.example.notesapp.dto.RefreshRequest;
 import com.example.notesapp.dto.SignupRequest;
 import com.example.notesapp.service.AuthService;
@@ -54,5 +56,17 @@ public class AuthController {
     public MessageResponse logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request);
         return new MessageResponse("Logged out");
+    }
+
+    @PostMapping("/password-reset/request")
+    public MessageResponse requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
+        authService.requestPasswordReset(request.email());
+        return new MessageResponse("If the email is registered, a password reset link has been sent.");
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public MessageResponse confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
+        authService.confirmPasswordReset(request);
+        return new MessageResponse("Password reset successful");
     }
 }

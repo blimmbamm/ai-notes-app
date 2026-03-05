@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface NoteRepository extends JpaRepository<NoteEntity, Long> {
     List<NoteEntity> findByUserOrderByUpdatedAtDesc(UserEntity user);
     Optional<NoteEntity> findByIdAndUser(Long id, UserEntity user);
+    void deleteByUser(UserEntity user);
 }

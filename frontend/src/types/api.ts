@@ -29,11 +29,17 @@ export interface ApiNoteRequest {
   content: string;
 }
 
+export interface ApiAccountResponse {
+  email: string;
+  createdAt: string;
+}
+
 export type MapIsoDateFields<T, K extends keyof T> = Omit<T, K> & {
   [P in K]: Date;
 };
 
 export type Note = MapIsoDateFields<ApiNote, "createdAt" | "updatedAt">;
+export type AccountProfile = MapIsoDateFields<ApiAccountResponse, "createdAt">;
 
 export interface NoteInput {
   title: string;

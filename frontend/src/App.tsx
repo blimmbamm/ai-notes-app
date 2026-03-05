@@ -5,6 +5,8 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import NotesPage from "./pages/NotesPage";
+import AccountPage from "./pages/AccountPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 export default function App() {
   return (
@@ -15,9 +17,11 @@ export default function App() {
       </Route>
 
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/notes" element={<NotesPage />} />
+        <Route path="/account" element={<AccountPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/notes" replace />} />
