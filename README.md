@@ -19,6 +19,33 @@ Services:
 - SMTP4DEV UI: http://localhost:5000
 - Postgres: localhost:5432
 
+## Fast Local Dev Loop (Recommended)
+Start only infra in Docker:
+```bash
+docker compose -f docker-compose.dev.yml up -d
+```
+
+Run backend locally (with DevTools):
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+Run frontend locally (with HMR):
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+This setup is faster than rebuilding app images on each code change.
+
+## CORS in Dev
+You do not need CORS for this dev setup, because Vite proxies `/api` to `http://localhost:8080`.
+From the browser perspective, requests still go to the Vite origin, so there is no cross-origin request.
+
+You only need CORS if frontend and backend are called from different origins directly (without proxy/reverse-proxy).
+
 ## Auth Flow
 1. Sign up in the UI.
 2. Open SMTP4DEV and click verification link.
@@ -31,21 +58,12 @@ Services:
 - `POST /api/auth/login`
 - `POST /api/auth/refresh`
 - `POST /api/auth/logout`
+- `POST /api/auth/password-reset/request`
+- `POST /api/auth/password-reset/confirm`
+- `GET /api/account/me`
+- `POST /api/account/password-reset-request`
+- `DELETE /api/account`
 - `GET /api/notes`
 - `POST /api/notes`
 - `PUT /api/notes/{id}`
 - `DELETE /api/notes/{id}`
-
-## Local dev (without Docker)
-Backend:
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-Frontend:
-```bash
-cd frontend
-npm install
-npm run dev
-```
