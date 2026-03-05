@@ -21,6 +21,7 @@ export interface ApiNote {
   title: string;
   content: string;
   colorHex: string | null;
+  tagNames: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -29,6 +30,7 @@ export interface ApiNoteRequest {
   title: string;
   content: string;
   colorHex: string | null;
+  tagNames: string[];
 }
 
 export interface ApiAccountResponse {
@@ -47,6 +49,7 @@ export interface NoteInput {
   title: string;
   content: string;
   colorHex: string | null;
+  tagNames: string[];
 }
 
 export interface AuthTokensResponse {

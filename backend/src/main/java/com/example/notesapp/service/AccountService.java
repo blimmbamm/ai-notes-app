@@ -6,6 +6,7 @@ import com.example.notesapp.repository.EmailVerificationTokenRepository;
 import com.example.notesapp.repository.NoteRepository;
 import com.example.notesapp.repository.PasswordResetTokenRepository;
 import com.example.notesapp.repository.RefreshTokenRepository;
+import com.example.notesapp.repository.TagRepository;
 import com.example.notesapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ public class AccountService {
     private final CurrentUserService currentUserService;
     private final UserRepository userRepository;
     private final NoteRepository noteRepository;
+    private final TagRepository tagRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
@@ -24,6 +26,7 @@ public class AccountService {
     public AccountService(CurrentUserService currentUserService,
                           UserRepository userRepository,
                           NoteRepository noteRepository,
+                          TagRepository tagRepository,
                           RefreshTokenRepository refreshTokenRepository,
                           EmailVerificationTokenRepository emailVerificationTokenRepository,
                           PasswordResetTokenRepository passwordResetTokenRepository,
@@ -31,6 +34,7 @@ public class AccountService {
         this.currentUserService = currentUserService;
         this.userRepository = userRepository;
         this.noteRepository = noteRepository;
+        this.tagRepository = tagRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
@@ -54,6 +58,7 @@ public class AccountService {
         UserEntity user = currentUserService.getCurrentUser();
 
         noteRepository.deleteByUser(user);
+        tagRepository.deleteByUser(user);
         refreshTokenRepository.deleteByUser(user);
         emailVerificationTokenRepository.deleteByUser(user);
         passwordResetTokenRepository.deleteByUser(user);
