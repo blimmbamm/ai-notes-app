@@ -28,6 +28,9 @@ function normalizeTag(rawTag: string): string {
   return rawTag.trim().toLowerCase();
 }
 
+interface NotesSnapshotContext {
+  previousNotes: Note[] | undefined;
+}
 export default function NotesPage() {
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -97,8 +100,13 @@ export default function NotesPage() {
     },
   });
 
-  const colorMutation = useMutation({
-    mutationFn: ({ note, colorHex }: { note: Note; colorHex: string | null }) =>
+  const colorMutation = useMutation<
+    Note,
+    Error,
+    { note: Note; colorHex: string | null },
+    NotesSnapshotContext
+  >({
+    mutationFn: ({ note, colorHex }) =>
       updateNote(
         note.id,
         {
@@ -109,22 +117,36 @@ export default function NotesPage() {
         },
         authPayload,
       ),
-    onSuccess: async () => {
+    onMutate: async ({ note, colorHex }) => {
       closePalette();
+      await queryClient.cancelQueries({ queryKey: ["notes"] });
+
+      const previousNotes = queryClient.getQueryData<Note[]>(["notes"]);
+      queryClient.setQueryData<Note[]>(["notes"], (currentNotes) =>
+        currentNotes?.map((currentNote) =>
+          currentNote.id === note.id
+            ? { ...currentNote, colorHex, updatedAt: new Date() }
+            : currentNote,
+        ),
+      );
+
+      return { previousNotes };
+    },
+    onError: (_error, _variables, context) => {
+      queryClient.setQueryData(["notes"], context?.previousNotes);
+    },
+    onSettled: async () => {
       await queryClient.refetchQueries({ queryKey: ["notes"] });
     },
   });
 
-  const tagMutation = useMutation({
-    mutationFn: ({
-      note,
-      tagNames,
-      syncCatalog,
-    }: {
-      note: Note;
-      tagNames: string[];
-      syncCatalog: boolean;
-    }) =>
+  const tagMutation = useMutation<
+    { result: Note; syncCatalog: boolean },
+    Error,
+    { note: Note; tagNames: string[]; syncCatalog: boolean },
+    NotesSnapshotContext
+  >({
+    mutationFn: ({ note, tagNames, syncCatalog }) =>
       updateNote(
         note.id,
         {
@@ -135,10 +157,27 @@ export default function NotesPage() {
         },
         authPayload,
       ).then((result) => ({ result, syncCatalog })),
-    onSuccess: async ({ syncCatalog }) => {
+    onMutate: async ({ note, tagNames }) => {
+      await queryClient.cancelQueries({ queryKey: ["notes"] });
+
+      const previousNotes = queryClient.getQueryData<Note[]>(["notes"]);
+      queryClient.setQueryData<Note[]>(["notes"], (currentNotes) =>
+        currentNotes?.map((currentNote) =>
+          currentNote.id === note.id
+            ? { ...currentNote, tagNames, updatedAt: new Date() }
+            : currentNote,
+        ),
+      );
+
+      return { previousNotes };
+    },
+    onError: (_error, _variables, context) => {
+      queryClient.setQueryData(["notes"], context?.previousNotes);
+    },
+    onSettled: async (_data, _error, variables) => {
       await queryClient.refetchQueries({ queryKey: ["notes"] });
 
-      if (syncCatalog) {
+      if (variables.syncCatalog) {
         await queryClient.invalidateQueries({
           queryKey: ["tag-catalog"],
           refetchType: "active",
@@ -365,3 +404,5 @@ export default function NotesPage() {
     </Box>
   );
 }
+
+
