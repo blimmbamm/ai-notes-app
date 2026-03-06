@@ -1,8 +1,22 @@
-import { Alert, Box, Button, CircularProgress, Container, FormControl, InputLabel, MenuItem, Select, Stack } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  useMediaQuery,
+} from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import AddIcon from "@mui/icons-material/Add";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type SubmitEvent } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
 import type { Note, NoteInput } from "../types/api";
 import { createNote, deleteNote, getNotes, updateNote } from "../api/notesApi";
 import { logout as logoutApi } from "../api/authApi";
@@ -14,10 +28,12 @@ import NoteCard from "../components/notes/NoteCard";
 import NoteEditorDialog from "../components/notes/NoteEditorDialog";
 import DeleteNoteDialog from "../components/notes/DeleteNoteDialog";
 import NoteColorPopover from "../components/notes/NoteColorPopover";
+import NotesTagSidenav from "../components/notes/NotesTagSidenav";
 
 type SortOrder = "desc" | "asc";
 
 const NOTE_SORT_ORDER_KEY = "noteSortOrder";
+const SIDENAV_WIDTH = 240;
 
 function readSortOrder(): SortOrder {
   const value = localStorage.getItem(NOTE_SORT_ORDER_KEY);
@@ -31,10 +47,14 @@ function normalizeTag(rawTag: string): string {
 interface NotesSnapshotContext {
   previousNotes: Note[] | undefined;
 }
+
 export default function NotesPage() {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const tagSubmitLockRef = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [form, setForm] = useState<NoteInput>({ title: "", content: "", colorHex: null, tagNames: [] });
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
@@ -44,7 +64,9 @@ export default function NotesPage() {
   const [paletteAnchorEl, setPaletteAnchorEl] = useState<HTMLElement | null>(null);
   const [paletteNote, setPaletteNote] = useState<Note | null>(null);
   const [tagInputByNoteId, setTagInputByNoteId] = useState<Record<number, string>>({});
-  const [isTagCatalogEnabled, setIsTagCatalogEnabled] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const selectedTagParam = normalizeTag(searchParams.get("tag") ?? "");
 
   useEffect(() => {
     localStorage.setItem(NOTE_SORT_ORDER_KEY, sortOrder);
@@ -68,20 +90,23 @@ export default function NotesPage() {
   const tagCatalogQuery = useQuery({
     queryKey: ["tag-catalog"],
     queryFn: () => getUserTags(authPayload),
-    enabled: isTagCatalogEnabled,
     staleTime: Infinity,
   });
 
-  const sortedNotes = useMemo(() => {
+  const filteredAndSortedNotes = useMemo(() => {
     if (!notesQuery.data) {
       return [];
     }
 
-    return [...notesQuery.data].sort((a, b) => {
+    const filtered = selectedTagParam
+      ? notesQuery.data.filter((note) => note.tagNames.includes(selectedTagParam))
+      : notesQuery.data;
+
+    return [...filtered].sort((a, b) => {
       const delta = a.updatedAt.getTime() - b.updatedAt.getTime();
       return sortOrder === "asc" ? delta : -delta;
     });
-  }, [notesQuery.data, sortOrder]);
+  }, [notesQuery.data, selectedTagParam, sortOrder]);
 
   const createMutation = useMutation({
     mutationFn: (payload: NoteInput) => createNote(payload, authPayload),
@@ -216,6 +241,22 @@ export default function NotesPage() {
     createMutation.mutate(form);
   };
 
+  function selectTag(tagName: string | null) {
+    setSearchParams((prev) => {
+      const nextParams = new URLSearchParams(prev);
+      if (tagName) {
+        nextParams.set("tag", tagName);
+      } else {
+        nextParams.delete("tag");
+      }
+      return nextParams;
+    });
+
+    if (isMobile) {
+      setMobileNavOpen(false);
+    }
+  }
+
   function openCreateDialog() {
     createMutation.reset();
     updateMutation.reset();
@@ -293,73 +334,114 @@ export default function NotesPage() {
 
   return (
     <Box>
-      <AppTopBar onLogout={() => logoutMutation.mutate()} logoutDisabled={logoutMutation.isPending} />
+      <AppTopBar
+        onLogout={() => logoutMutation.mutate()}
+        logoutDisabled={logoutMutation.isPending}
+        showMenuButton={isMobile}
+        onMenuClick={() => setMobileNavOpen(true)}
+      />
 
-      <Container sx={{ py: { xs: 2, md: 4 } }}>
-        <Stack spacing={3}>
-          <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2}>
-            <FormControl size="small" sx={{ minWidth: 210 }}>
-              <InputLabel id="sort-notes-label">Sort by last modified</InputLabel>
-              <Select
-                labelId="sort-notes-label"
-                value={sortOrder}
-                label="Sort by last modified"
-                onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-              >
-                <MenuItem value="desc">Newest first</MenuItem>
-                <MenuItem value="asc">Oldest first</MenuItem>
-              </Select>
-            </FormControl>
+      <Box sx={{ display: "flex" }}>
+        <NotesTagSidenav
+          tags={tagCatalogQuery.data ?? []}
+          selectedTag={selectedTagParam}
+          mobileOpen={mobileNavOpen}
+          onCloseMobile={() => setMobileNavOpen(false)}
+          onSelectTag={selectTag}
+          width={SIDENAV_WIDTH}
+        />
 
-            <Box sx={{ display: "flex", justifyContent: { xs: "stretch", sm: "flex-end" } }}>
-              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateDialog}>
-                Add note
-              </Button>
-            </Box>
-          </Stack>
+        <Box component="main" sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Container sx={{ py: { xs: 2, md: 4 } }}>
+            <Stack spacing={3}>
+              <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2}>
+                <FormControl size="small" sx={{ minWidth: 210 }}>
+                  <InputLabel id="sort-notes-label">Sort by last modified</InputLabel>
+                  <Select
+                    labelId="sort-notes-label"
+                    value={sortOrder}
+                    label="Sort by last modified"
+                    onChange={(event) => setSortOrder(event.target.value as SortOrder)}
+                  >
+                    <MenuItem value="desc">Newest first</MenuItem>
+                    <MenuItem value="asc">Oldest first</MenuItem>
+                  </Select>
+                </FormControl>
 
-          {notesQuery.isPending && <CircularProgress />}
-          {notesQuery.isError && <Alert severity="error">{getErrorMessage(notesQuery.error)}</Alert>}
-          {deleteMutation.isError && <Alert severity="error">{getErrorMessage(deleteMutation.error)}</Alert>}
-          {colorMutation.isError && <Alert severity="error">{getErrorMessage(colorMutation.error)}</Alert>}
-          {tagMutation.isError && <Alert severity="error">{getErrorMessage(tagMutation.error)}</Alert>}
+                <Box sx={{ display: "flex", justifyContent: { xs: "stretch", sm: "flex-end" } }}>
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateDialog}>
+                    Add note
+                  </Button>
+                </Box>
+              </Stack>
 
-          {notesQuery.isSuccess && (
-            <Grid container spacing={2}>
-              {sortedNotes.map((note) => {
-                const inputValue = tagInputByNoteId[note.id] ?? "";
-                const normalizedInput = normalizeTag(inputValue);
-                const tagOptions = (tagCatalogQuery.data ?? []).filter(
-                  (tagName) => !note.tagNames.includes(tagName) && (normalizedInput === "" || tagName.includes(normalizedInput)),
-                );
+              {notesQuery.isPending && <CircularProgress />}
+              {notesQuery.isError && <Alert severity="error">{getErrorMessage(notesQuery.error)}</Alert>}
+              {tagCatalogQuery.isError && <Alert severity="error">{getErrorMessage(tagCatalogQuery.error)}</Alert>}
+              {deleteMutation.isError && <Alert severity="error">{getErrorMessage(deleteMutation.error)}</Alert>}
+              {colorMutation.isError && <Alert severity="error">{getErrorMessage(colorMutation.error)}</Alert>}
+              {tagMutation.isError && <Alert severity="error">{getErrorMessage(tagMutation.error)}</Alert>}
 
-                return (
-                  <Grid size={{ xs: 12, md: 6 }} key={note.id}>
-                    <NoteCard
-                      note={note}
-                      tagInputValue={inputValue}
-                      tagOptions={tagOptions}
-                      onTagInputFocus={() => setIsTagCatalogEnabled(true)}
-                      onTagInputChange={(value, reason) => {
-                        if (reason === "reset") {
-                          return;
-                        }
+              {notesQuery.isSuccess && filteredAndSortedNotes.length === 0 && (
+                <Box
+                  sx={{
+                    minHeight: { xs: "40vh", md: "50vh" },
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    color: "text.disabled",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  {selectedTagParam
+                    ? `No notes found for tag "${selectedTagParam}".`
+                    : "No notes yet. Create your first note."}
+                </Box>
+              )}
 
-                        setTagInputByNoteId((prev) => ({ ...prev, [note.id]: value }));
-                      }}
-                      onTagSubmit={(value) => submitInlineTag(note, value)}
-                      onTagRemove={(tagName) => removeTagFromNote(note, tagName)}
-                      onOpenPalette={(event) => openPalette(event, note)}
-                      onEdit={() => openEditDialog(note)}
-                      onDelete={() => setDeleteCandidate(note)}
-                    />
-                  </Grid>
-                );
-              })}
-            </Grid>
-          )}
-        </Stack>
-      </Container>
+              {notesQuery.isSuccess && filteredAndSortedNotes.length > 0 && (
+                <Grid container spacing={2}>
+                  {filteredAndSortedNotes.map((note) => {
+                    const inputValue = tagInputByNoteId[note.id] ?? "";
+                    const normalizedInput = normalizeTag(inputValue);
+                    const tagOptions = (tagCatalogQuery.data ?? []).filter(
+                      (tagName) => !note.tagNames.includes(tagName) && (normalizedInput === "" || tagName.includes(normalizedInput)),
+                    );
+
+                    return (
+                      <Grid size={{ xs: 12, md: 6 }} key={note.id}>
+                        <NoteCard
+                          note={note}
+                          tagInputValue={inputValue}
+                          tagOptions={tagOptions}
+                          onTagInputFocus={() => {
+                            if (tagCatalogQuery.isStale) {
+                              queryClient.refetchQueries({ queryKey: ["tag-catalog"] });
+                            }
+                          }}
+                          onTagInputChange={(value, reason) => {
+                            if (reason === "reset") {
+                              return;
+                            }
+
+                            setTagInputByNoteId((prev) => ({ ...prev, [note.id]: value }));
+                          }}
+                          onTagSubmit={(value) => submitInlineTag(note, value)}
+                          onTagRemove={(tagName) => removeTagFromNote(note, tagName)}
+                          onOpenPalette={(event) => openPalette(event, note)}
+                          onEdit={() => openEditDialog(note)}
+                          onDelete={() => setDeleteCandidate(note)}
+                        />
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              )}
+            </Stack>
+          </Container>
+        </Box>
+      </Box>
 
       <NoteEditorDialog
         open={isNoteDialogOpen}
@@ -404,5 +486,7 @@ export default function NotesPage() {
     </Box>
   );
 }
+
+
 
 

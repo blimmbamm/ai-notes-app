@@ -1,5 +1,6 @@
 import { AppBar, IconButton, Menu, MenuItem, Toolbar, Typography } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import MenuIcon from "@mui/icons-material/Menu";
 import { useState } from "react";
 import type { MouseEvent } from "react";
 import { NavLink } from "react-router-dom";
@@ -7,9 +8,16 @@ import { NavLink } from "react-router-dom";
 interface AppTopBarProps {
   onLogout: () => void;
   logoutDisabled?: boolean;
+  onMenuClick?: () => void;
+  showMenuButton?: boolean;
 }
 
-export default function AppTopBar({ onLogout, logoutDisabled = false }: AppTopBarProps) {
+export default function AppTopBar({
+  onLogout,
+  logoutDisabled = false,
+  onMenuClick,
+  showMenuButton = false,
+}: AppTopBarProps) {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
   const menuOpen = Boolean(menuAnchor);
@@ -25,6 +33,12 @@ export default function AppTopBar({ onLogout, logoutDisabled = false }: AppTopBa
   return (
     <AppBar position="static" color="primary">
       <Toolbar>
+        {showMenuButton && (
+          <IconButton color="inherit" onClick={onMenuClick} edge="start" sx={{ mr: 1 }}>
+            <MenuIcon />
+          </IconButton>
+        )}
+
         <Typography
           component={NavLink}
           to="/notes"
