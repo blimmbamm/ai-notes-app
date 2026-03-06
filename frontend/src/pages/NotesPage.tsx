@@ -238,7 +238,12 @@ export default function NotesPage() {
       return;
     }
 
-    createMutation.mutate(form);
+    const createPayload: NoteInput =
+      selectedTagParam && !form.tagNames.includes(selectedTagParam)
+        ? { ...form, tagNames: [...form.tagNames, selectedTagParam] }
+        : form;
+
+    createMutation.mutate(createPayload);
   };
 
   function selectTag(tagName: string | null) {
@@ -261,7 +266,12 @@ export default function NotesPage() {
     createMutation.reset();
     updateMutation.reset();
     setEditingNoteId(null);
-    setForm({ title: "", content: "", colorHex: null, tagNames: [] });
+    setForm({
+      title: "",
+      content: "",
+      colorHex: null,
+      tagNames: selectedTagParam ? [selectedTagParam] : [],
+    });
     setIsNoteDialogOpen(true);
   }
 
@@ -276,7 +286,12 @@ export default function NotesPage() {
   function closeNoteDialog() {
     setIsNoteDialogOpen(false);
     setEditingNoteId(null);
-    setForm({ title: "", content: "", colorHex: null, tagNames: [] });
+    setForm({
+      title: "",
+      content: "",
+      colorHex: null,
+      tagNames: selectedTagParam ? [selectedTagParam] : [],
+    });
   }
 
   function openPalette(event: MouseEvent<HTMLElement>, note: Note) {
@@ -486,6 +501,7 @@ export default function NotesPage() {
     </Box>
   );
 }
+
 
 
 
