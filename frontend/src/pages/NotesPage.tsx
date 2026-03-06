@@ -1,50 +1,19 @@
-import {
-  Alert,
-  Autocomplete,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  FormControl,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Popover,
-  Select,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Alert, Box, Button, CircularProgress, Container, FormControl, InputLabel, MenuItem, Select, Stack } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
-import PaletteIcon from "@mui/icons-material/Palette";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-  type MouseEvent,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type SubmitEvent } from "react";
 import type { Note, NoteInput } from "../types/api";
 import { createNote, deleteNote, getNotes, updateNote } from "../api/notesApi";
 import { logout as logoutApi } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../utils/error";
 import AppTopBar from "../components/AppTopBar";
-import { NOTE_COLORS } from "../constants/noteColors";
 import { getUserTags } from "../api/tagsApi";
+import NoteCard from "../components/notes/NoteCard";
+import NoteEditorDialog from "../components/notes/NoteEditorDialog";
+import DeleteNoteDialog from "../components/notes/DeleteNoteDialog";
+import NoteColorPopover from "../components/notes/NoteColorPopover";
 
 type SortOrder = "desc" | "asc";
 
@@ -64,23 +33,14 @@ export default function NotesPage() {
   const queryClient = useQueryClient();
   const tagSubmitLockRef = useRef(false);
 
-  const [form, setForm] = useState<NoteInput>({
-    title: "",
-    content: "",
-    colorHex: null,
-    tagNames: [],
-  });
+  const [form, setForm] = useState<NoteInput>({ title: "", content: "", colorHex: null, tagNames: [] });
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState<Note | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => readSortOrder());
-  const [paletteAnchorEl, setPaletteAnchorEl] = useState<HTMLElement | null>(
-    null,
-  );
+  const [paletteAnchorEl, setPaletteAnchorEl] = useState<HTMLElement | null>(null);
   const [paletteNote, setPaletteNote] = useState<Note | null>(null);
-  const [tagInputByNoteId, setTagInputByNoteId] = useState<
-    Record<number, string>
-  >({});
+  const [tagInputByNoteId, setTagInputByNoteId] = useState<Record<number, string>>({});
   const [isTagCatalogEnabled, setIsTagCatalogEnabled] = useState(false);
 
   useEffect(() => {
@@ -150,8 +110,7 @@ export default function NotesPage() {
         authPayload,
       ),
     onSuccess: async () => {
-      setPaletteAnchorEl(null);
-      setPaletteNote(null);
+      closePalette();
       await queryClient.refetchQueries({ queryKey: ["notes"] });
     },
   });
@@ -197,8 +156,7 @@ export default function NotesPage() {
   });
 
   const logoutMutation = useMutation({
-    mutationFn: () =>
-      logoutApi({ refreshToken: auth.refreshToken }, authPayload),
+    mutationFn: () => logoutApi({ refreshToken: auth.refreshToken }, authPayload),
     onSettled: () => auth.logout(),
   });
 
@@ -208,7 +166,7 @@ export default function NotesPage() {
       ? getErrorMessage(updateMutation.error)
       : "";
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (editingNoteId !== null) {
@@ -231,12 +189,7 @@ export default function NotesPage() {
     createMutation.reset();
     updateMutation.reset();
     setEditingNoteId(note.id);
-    setForm({
-      title: note.title,
-      content: note.content,
-      colorHex: note.colorHex,
-      tagNames: note.tagNames,
-    });
+    setForm({ title: note.title, content: note.content, colorHex: note.colorHex, tagNames: note.tagNames });
     setIsNoteDialogOpen(true);
   }
 
@@ -251,6 +204,11 @@ export default function NotesPage() {
     setPaletteNote(note);
   }
 
+  function closePalette() {
+    setPaletteAnchorEl(null);
+    setPaletteNote(null);
+  }
+
   function clearTagInput(noteId: number) {
     setTagInputByNoteId((prev) => ({ ...prev, [noteId]: "" }));
   }
@@ -259,11 +217,7 @@ export default function NotesPage() {
     const normalizedTag = normalizeTag(rawTag);
     clearTagInput(note.id);
 
-    if (!normalizedTag) {
-      return;
-    }
-
-    if (note.tagNames.includes(normalizedTag)) {
+    if (!normalizedTag || note.tagNames.includes(normalizedTag)) {
       return;
     }
 
@@ -300,202 +254,66 @@ export default function NotesPage() {
 
   return (
     <Box>
-      <AppTopBar
-        onLogout={() => logoutMutation.mutate()}
-        logoutDisabled={logoutMutation.isPending}
-      />
+      <AppTopBar onLogout={() => logoutMutation.mutate()} logoutDisabled={logoutMutation.isPending} />
 
       <Container sx={{ py: { xs: 2, md: 4 } }}>
         <Stack spacing={3}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent="space-between"
-            spacing={2}
-          >
+          <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2}>
             <FormControl size="small" sx={{ minWidth: 210 }}>
-              <InputLabel id="sort-notes-label">
-                Sort by last modified
-              </InputLabel>
+              <InputLabel id="sort-notes-label">Sort by last modified</InputLabel>
               <Select
                 labelId="sort-notes-label"
                 value={sortOrder}
                 label="Sort by last modified"
-                onChange={(event) =>
-                  setSortOrder(event.target.value as SortOrder)
-                }
+                onChange={(event) => setSortOrder(event.target.value as SortOrder)}
               >
                 <MenuItem value="desc">Newest first</MenuItem>
                 <MenuItem value="asc">Oldest first</MenuItem>
               </Select>
             </FormControl>
 
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: { xs: "stretch", sm: "flex-end" },
-              }}
-            >
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={openCreateDialog}
-              >
+            <Box sx={{ display: "flex", justifyContent: { xs: "stretch", sm: "flex-end" } }}>
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateDialog}>
                 Add note
               </Button>
             </Box>
           </Stack>
 
           {notesQuery.isPending && <CircularProgress />}
-          {notesQuery.isError && (
-            <Alert severity="error">{getErrorMessage(notesQuery.error)}</Alert>
-          )}
-          {deleteMutation.isError && (
-            <Alert severity="error">
-              {getErrorMessage(deleteMutation.error)}
-            </Alert>
-          )}
-          {colorMutation.isError && (
-            <Alert severity="error">
-              {getErrorMessage(colorMutation.error)}
-            </Alert>
-          )}
-          {tagMutation.isError && (
-            <Alert severity="error">{getErrorMessage(tagMutation.error)}</Alert>
-          )}
+          {notesQuery.isError && <Alert severity="error">{getErrorMessage(notesQuery.error)}</Alert>}
+          {deleteMutation.isError && <Alert severity="error">{getErrorMessage(deleteMutation.error)}</Alert>}
+          {colorMutation.isError && <Alert severity="error">{getErrorMessage(colorMutation.error)}</Alert>}
+          {tagMutation.isError && <Alert severity="error">{getErrorMessage(tagMutation.error)}</Alert>}
 
           {notesQuery.isSuccess && (
             <Grid container spacing={2}>
               {sortedNotes.map((note) => {
                 const inputValue = tagInputByNoteId[note.id] ?? "";
                 const normalizedInput = normalizeTag(inputValue);
-                const filteredOptions = (tagCatalogQuery.data ?? []).filter(
-                  (tagName) =>
-                    !note.tagNames.includes(tagName) &&
-                    (normalizedInput === "" || tagName.includes(normalizedInput)),
+                const tagOptions = (tagCatalogQuery.data ?? []).filter(
+                  (tagName) => !note.tagNames.includes(tagName) && (normalizedInput === "" || tagName.includes(normalizedInput)),
                 );
 
                 return (
                   <Grid size={{ xs: 12, md: 6 }} key={note.id}>
-                    <Card
-                      sx={{
-                        backgroundColor: note.colorHex ?? "background.paper",
+                    <NoteCard
+                      note={note}
+                      tagInputValue={inputValue}
+                      tagOptions={tagOptions}
+                      onTagInputFocus={() => setIsTagCatalogEnabled(true)}
+                      onTagInputChange={(value, reason) => {
+                        if (reason === "reset") {
+                          return;
+                        }
+
+                        setTagInputByNoteId((prev) => ({ ...prev, [note.id]: value }));
                       }}
-                    >
-                      <CardContent>
-                        <Stack
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="center"
-                          sx={{ mb: 1 }}
-                        >
-                          <Typography variant="h6">{note.title}</Typography>
-                          <Stack direction="row" spacing={1}>
-                            <IconButton
-                              size="small"
-                              onClick={(event) => openPalette(event, note)}
-                            >
-                              <PaletteIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => openEditDialog(note)}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => setDeleteCandidate(note)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Stack>
-                        </Stack>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: "block", mb: 1 }}
-                        >
-                          Last modified: {note.updatedAt.toLocaleString()}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ whiteSpace: "pre-wrap", mb: 1.5 }}
-                        >
-                          {note.content}
-                        </Typography>
-
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            flexWrap: "wrap",
-                            minHeight: 32,
-                          }}
-                        >
-                          {note.tagNames.map((tagName) => (
-                            <Chip
-                              key={tagName}
-                              size="small"
-                              label={tagName}
-                              onDelete={() => removeTagFromNote(note, tagName)}
-                            />
-                          ))}
-
-                          <Autocomplete
-                            freeSolo
-                            size="small"
-                            options={filteredOptions}
-                            inputValue={inputValue}
-                            onInputChange={(_, value, reason) => {
-                              if (reason === "reset") {
-                                return;
-                              }
-
-                              setTagInputByNoteId((prev) => ({
-                                ...prev,
-                                [note.id]: value,
-                              }));
-                            }}
-                            onChange={(_, value) => {
-                              if (typeof value === "string") {
-                                submitInlineTag(note, value);
-                              }
-                            }}
-                            sx={{ minWidth: 140, maxWidth: 220 }}
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                variant="standard"
-                                placeholder="Add tags..."
-                                onFocus={() => setIsTagCatalogEnabled(true)}
-                                onBlur={() =>
-                                  submitInlineTag(
-                                    note,
-                                    tagInputByNoteId[note.id] ?? "",
-                                  )
-                                }
-                                onKeyDown={(event) => {
-                                  if (event.key === "Enter") {
-                                    event.preventDefault();
-                                    submitInlineTag(
-                                      note,
-                                      tagInputByNoteId[note.id] ?? "",
-                                    );
-                                  }
-                                }}
-                                InputProps={{
-                                  ...params.InputProps,
-                                  disableUnderline: true,
-                                  sx: { fontSize: 14 },
-                                }}
-                              />
-                            )}
-                          />
-                        </Box>
-                      </CardContent>
-                    </Card>
+                      onTagSubmit={(value) => submitInlineTag(note, value)}
+                      onTagRemove={(tagName) => removeTagFromNote(note, tagName)}
+                      onOpenPalette={(event) => openPalette(event, note)}
+                      onEdit={() => openEditDialog(note)}
+                      onDelete={() => setDeleteCandidate(note)}
+                    />
                   </Grid>
                 );
               })}
@@ -504,178 +322,46 @@ export default function NotesPage() {
         </Stack>
       </Container>
 
-      <Dialog
+      <NoteEditorDialog
         open={isNoteDialogOpen}
+        isEditing={editingNoteId !== null}
+        form={form}
+        isPending={createMutation.isPending || updateMutation.isPending}
+        errorMessage={formErrorMessage}
         onClose={closeNoteDialog}
-        fullWidth
-        maxWidth="sm"
-      >
-        <Box component="form" onSubmit={onSubmit}>
-          <DialogTitle>
-            {editingNoteId !== null ? "Edit note" : "Add note"}
-          </DialogTitle>
-          <DialogContent>
-            <TextField
-              autoFocus
-              fullWidth
-              label="Title"
-              margin="normal"
-              value={form.title}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, title: event.target.value }))
-              }
-            />
-            <TextField
-              fullWidth
-              label="Content"
-              margin="normal"
-              multiline
-              minRows={5}
-              value={form.content}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, content: event.target.value }))
-              }
-            />
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ mt: 2 }}
-              flexWrap="wrap"
-              useFlexGap
-            >
-              <Button
-                size="small"
-                variant={form.colorHex === null ? "contained" : "outlined"}
-                onClick={() =>
-                  setForm((prev) => ({ ...prev, colorHex: null }))
-                }
-              >
-                No color
-              </Button>
-              {NOTE_COLORS.map((color) => (
-                <IconButton
-                  key={color}
-                  size="small"
-                  onClick={() =>
-                    setForm((prev) => ({ ...prev, colorHex: color }))
-                  }
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    border: "1px solid",
-                    borderColor:
-                      form.colorHex === color ? "text.primary" : "divider",
-                    backgroundColor: color,
-                    borderWidth: form.colorHex === color ? 2 : 1,
-                  }}
-                />
-              ))}
-            </Stack>
-            {formErrorMessage && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {formErrorMessage}
-              </Alert>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={closeNoteDialog}>Cancel</Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={createMutation.isPending || updateMutation.isPending}
-            >
-              {editingNoteId !== null ? "Save" : "Create"}
-            </Button>
-          </DialogActions>
-        </Box>
-      </Dialog>
+        onSubmit={onSubmit}
+        onTitleChange={(title) => setForm((prev) => ({ ...prev, title }))}
+        onContentChange={(content) => setForm((prev) => ({ ...prev, content }))}
+        onColorChange={(colorHex) => setForm((prev) => ({ ...prev, colorHex }))}
+      />
 
-      <Popover
+      <NoteColorPopover
         open={Boolean(paletteAnchorEl) && Boolean(paletteNote)}
         anchorEl={paletteAnchorEl}
-        onClose={() => {
-          if (!colorMutation.isPending) {
-            setPaletteAnchorEl(null);
-            setPaletteNote(null);
+        isPending={colorMutation.isPending}
+        onClose={closePalette}
+        onSelectNone={() => {
+          if (paletteNote) {
+            colorMutation.mutate({ note: paletteNote, colorHex: null });
           }
         }}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-      >
-        <Stack direction="row" spacing={1} sx={{ p: 1.5 }}>
-          <Button
-            size="small"
-            variant="outlined"
-            disabled={!paletteNote || colorMutation.isPending}
-            onClick={() => {
-              if (paletteNote) {
-                colorMutation.mutate({ note: paletteNote, colorHex: null });
-              }
-            }}
-          >
-            None
-          </Button>
-          {NOTE_COLORS.map((color) => (
-            <IconButton
-              key={color}
-              size="small"
-              disabled={!paletteNote || colorMutation.isPending}
-              onClick={() => {
-                if (paletteNote) {
-                  colorMutation.mutate({ note: paletteNote, colorHex: color });
-                }
-              }}
-              sx={{
-                width: 26,
-                height: 26,
-                border: "1px solid",
-                borderColor: "divider",
-                backgroundColor: color,
-              }}
-            />
-          ))}
-        </Stack>
-      </Popover>
+        onSelectColor={(colorHex) => {
+          if (paletteNote) {
+            colorMutation.mutate({ note: paletteNote, colorHex });
+          }
+        }}
+      />
 
-      <Dialog
-        open={deleteCandidate !== null}
-        onClose={() => {
-          if (!deleteMutation.isPending) {
-            setDeleteCandidate(null);
+      <DeleteNoteDialog
+        note={deleteCandidate}
+        isPending={deleteMutation.isPending}
+        onCancel={() => setDeleteCandidate(null)}
+        onConfirm={() => {
+          if (deleteCandidate) {
+            deleteMutation.mutate(deleteCandidate.id);
           }
         }}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>Delete note?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {deleteCandidate
-              ? `This will permanently delete "${deleteCandidate.title}".`
-              : "This will permanently delete this note."}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setDeleteCandidate(null)}
-            disabled={deleteMutation.isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            color="error"
-            variant="contained"
-            disabled={!deleteCandidate || deleteMutation.isPending}
-            onClick={() => {
-              if (deleteCandidate) {
-                deleteMutation.mutate(deleteCandidate.id);
-              }
-            }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      />
     </Box>
   );
 }
-
