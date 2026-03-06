@@ -1,4 +1,7 @@
-import { Box, Drawer, List, ListItemButton, ListItemText, Typography } from "@mui/material";
+import { useState } from "react";
+import { Box, Drawer, IconButton, List, ListItemButton, ListItemText, Stack, Typography } from "@mui/material";
+import SettingsIcon from "@mui/icons-material/Settings";
+import ManageTagsDialog from "./ManageTagsDialog";
 
 interface NotesTagSidenavProps {
   tags: string[];
@@ -6,6 +9,9 @@ interface NotesTagSidenavProps {
   mobileOpen: boolean;
   onCloseMobile: () => void;
   onSelectTag: (tagName: string | null) => void;
+  onCreateTag: (name: string) => Promise<void>;
+  onRenameTag: (currentName: string, newName: string) => Promise<void>;
+  onDeleteTag: (name: string) => Promise<void>;
   width: number;
 }
 
@@ -15,13 +21,24 @@ export default function NotesTagSidenav({
   mobileOpen,
   onCloseMobile,
   onSelectTag,
+  onCreateTag,
+  onRenameTag,
+  onDeleteTag,
   width,
 }: NotesTagSidenavProps) {
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
+
   const content = (
     <Box sx={{ width: "100%", maxWidth: width, overflowX: "hidden" }}>
-      <Typography variant="h6" sx={{ px: 2, py: 1.5 }}>
-        Tags
-      </Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1, py: 1 }}>
+        <Typography variant="h6" sx={{ px: 1 }}>
+          Tags
+        </Typography>
+        <IconButton size="small" onClick={() => setManageDialogOpen(true)} aria-label="Manage tags">
+          <SettingsIcon fontSize="small" />
+        </IconButton>
+      </Stack>
+
       <List disablePadding sx={{ overflowX: "hidden" }}>
         <ListItemButton selected={selectedTag === ""} onClick={() => onSelectTag(null)}>
           <ListItemText primary="All" primaryTypographyProps={{ noWrap: true }} />
@@ -33,6 +50,15 @@ export default function NotesTagSidenav({
           </ListItemButton>
         ))}
       </List>
+
+      <ManageTagsDialog
+        open={manageDialogOpen}
+        tags={tags}
+        onClose={() => setManageDialogOpen(false)}
+        onCreateTag={onCreateTag}
+        onRenameTag={onRenameTag}
+        onDeleteTag={onDeleteTag}
+      />
     </Box>
   );
 
@@ -78,4 +104,3 @@ export default function NotesTagSidenav({
     </>
   );
 }
-

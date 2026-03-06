@@ -23,7 +23,7 @@ import { logout as logoutApi } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../utils/error";
 import AppTopBar from "../components/AppTopBar";
-import { getUserTags } from "../api/tagsApi";
+import { createTag, deleteTag as deleteTagApi, getUserTags, renameTag as renameTagApi } from "../api/tagsApi";
 import NoteCard from "../components/notes/NoteCard";
 import NoteEditorDialog from "../components/notes/NoteEditorDialog";
 import DeleteNoteDialog from "../components/notes/DeleteNoteDialog";
@@ -93,6 +93,42 @@ export default function NotesPage() {
     staleTime: Infinity,
   });
 
+
+  const createTagMutation = useMutation({
+    mutationFn: (name: string) => createTag(name, authPayload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["tag-catalog"] });
+    },
+  });
+
+  const renameTagMutation = useMutation({
+    mutationFn: ({ currentName, newName }: { currentName: string; newName: string }) =>
+      renameTagApi(currentName, newName, authPayload),
+    onSuccess: async (_data, variables) => {
+      if (selectedTagParam === variables.currentName) {
+        selectTag(variables.newName);
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["tag-catalog"] }),
+        queryClient.refetchQueries({ queryKey: ["notes"] }),
+      ]);
+    },
+  });
+
+  const deleteTagMutation = useMutation({
+    mutationFn: (name: string) => deleteTagApi(name, authPayload),
+    onSuccess: async (_data, deletedTagName) => {
+      if (selectedTagParam === deletedTagName) {
+        selectTag(null);
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["tag-catalog"] }),
+        queryClient.refetchQueries({ queryKey: ["notes"] }),
+      ]);
+    },
+  });
   const filteredAndSortedNotes = useMemo(() => {
     if (!notesQuery.data) {
       return [];
@@ -363,6 +399,15 @@ export default function NotesPage() {
           mobileOpen={mobileNavOpen}
           onCloseMobile={() => setMobileNavOpen(false)}
           onSelectTag={selectTag}
+          onCreateTag={async (name) => {
+            await createTagMutation.mutateAsync(name);
+          }}
+          onRenameTag={async (currentName, newName) => {
+            await renameTagMutation.mutateAsync({ currentName, newName });
+          }}
+          onDeleteTag={async (name) => {
+            await deleteTagMutation.mutateAsync(name);
+          }}
           width={SIDENAV_WIDTH}
         />
 
@@ -501,6 +546,9 @@ export default function NotesPage() {
     </Box>
   );
 }
+
+
+
 
 
 

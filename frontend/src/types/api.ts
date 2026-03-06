@@ -33,6 +33,15 @@ export interface ApiNoteRequest {
   tagNames: string[];
 }
 
+export interface ApiTagCreateRequest {
+  name: string;
+}
+
+export interface ApiTagRenameRequest {
+  currentName: string;
+  newName: string;
+}
+
 export interface ApiAccountResponse {
   email: string;
   createdAt: string;
