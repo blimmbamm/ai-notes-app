@@ -31,7 +31,7 @@ export default function AppTopBar({
   };
 
   return (
-    <AppBar position="static" color="primary">
+    <AppBar position="static" color="secondary">
       <Toolbar>
         {showMenuButton && (
           <IconButton color="inherit" onClick={onMenuClick} edge="start" sx={{ mr: 1 }}>
