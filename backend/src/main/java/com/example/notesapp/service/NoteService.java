@@ -112,7 +112,7 @@ public class NoteService {
             return new LinkedHashSet<>();
         }
 
-        List<TagEntity> existingTags = tagRepository.findByUserAndNameIn(user, normalizedTagNames);
+        List<TagEntity> existingTags = new ArrayList<>(tagRepository.findByUserAndNameIn(user, normalizedTagNames));
         Set<String> existingNames = existingTags.stream().map(TagEntity::getName).collect(java.util.stream.Collectors.toSet());
 
         List<TagEntity> newTags = new ArrayList<>();
