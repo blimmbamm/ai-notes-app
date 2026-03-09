@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -99,5 +100,41 @@ class TagServiceTest {
 
         verify(tagRepository).findByUserAndName(eq(user), eq("work"));
         verify(tagRepository).delete(existing);
+    }
+
+    @Test
+    void listAllReturnsSortedNamesFromRepository() {
+        UserEntity user = UserEntity.builder().id(1L).email("u@example.com").build();
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(tagRepository.findByUserOrderByNameAsc(user)).thenReturn(List.of(
+                TagEntity.builder().name("alpha").build(),
+                TagEntity.builder().name("zeta").build()
+        ));
+
+        List<String> tags = tagService.listAll();
+
+        assertEquals(List.of("alpha", "zeta"), tags);
+    }
+
+    @Test
+    void renameSameNormalizedNameUpdatesWithoutDuplicateCheck() {
+        UserEntity user = UserEntity.builder().id(1L).email("u@example.com").build();
+        TagEntity existing = TagEntity.builder().id(5L).user(user).name("work").build();
+
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(tagRepository.findByUserAndName(user, "work")).thenReturn(Optional.of(existing));
+
+        tagService.rename("WORK", " work ");
+
+        verify(tagRepository, never()).existsByUserAndName(user, "work");
+        verify(tagRepository).save(existing);
+        assertEquals("work", existing.getName());
+    }
+
+    @Test
+    void createThrowsWhenNameTooLong() {
+        String tooLong = "a".repeat(41);
+        assertThrows(BadRequestException.class, () -> tagService.create(tooLong));
+        verify(tagRepository, never()).save(any(TagEntity.class));
     }
 }

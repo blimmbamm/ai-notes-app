@@ -141,4 +141,47 @@ class NoteServiceTest {
         verify(noteRepository).save(noteCaptor.capture());
         assertNull(noteCaptor.getValue().getNotesColor());
     }
+
+    @Test
+    void createWithNullTagsDoesNotResolveOrCreateTags() {
+        UserEntity user = UserEntity.builder().id(1L).email("u@example.com").build();
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(noteRepository.save(any(NoteEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        NoteRequest request = new NoteRequest("Title", "Body", "#ffffff", null);
+        NoteResponse response = noteService.create(request);
+
+        verify(tagRepository, never()).findByUserAndNameIn(any(), anyCollection());
+        verify(tagRepository, never()).saveAll(any());
+        assertEquals(List.of(), response.tagNames());
+    }
+
+    @Test
+    void updateReplacesFieldsAndTagSet() {
+        UserEntity user = UserEntity.builder().id(1L).email("u@example.com").build();
+        NoteEntity note = NoteEntity.builder()
+                .id(42L)
+                .user(user)
+                .title("old")
+                .content("old-content")
+                .notesColor("#111111")
+                .createdAt(Instant.parse("2026-01-01T00:00:00Z"))
+                .updatedAt(Instant.parse("2026-01-01T00:00:00Z"))
+                .tags(new LinkedHashSet<>(Set.of(TagEntity.builder().name("oldtag").build())))
+                .build();
+        TagEntity work = TagEntity.builder().id(10L).user(user).name("work").build();
+
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(noteRepository.findByIdAndUser(42L, user)).thenReturn(Optional.of(note));
+        when(tagRepository.findByUserAndNameIn(eq(user), anyCollection())).thenReturn(List.of(work));
+        when(noteRepository.save(any(NoteEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        NoteRequest request = new NoteRequest("  New Title  ", "  New Content  ", "  #ABCDEF ", List.of(" WORK ", "work"));
+        NoteResponse response = noteService.update(42L, request);
+
+        assertEquals("New Title", note.getTitle());
+        assertEquals("New Content", note.getContent());
+        assertEquals("#abcdef", note.getNotesColor());
+        assertEquals(List.of("work"), response.tagNames());
+    }
 }
