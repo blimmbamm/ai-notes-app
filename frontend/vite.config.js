@@ -11,10 +11,20 @@ export default defineConfig({
       },
     },
   },
+
   test: {
     globals: true,
     environment: "jsdom",
     setupFiles: "./src/setupTests.ts",
+    dir: "src",
+    include: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/coverage/**",
+      "**/.git/**",
+    ],
     coverage: {
       reporter: ["text", "html"],
       reportsDirectory: "./coverage",
