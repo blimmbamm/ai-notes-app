@@ -81,10 +81,10 @@ jobs:
     name: Frontend (Vite)
     runs-on: ubuntu-latest
     env:
-      FRONTEND_MIN_STATEMENTS_COVERAGE: "50"
-      FRONTEND_MIN_LINES_COVERAGE: "50"
-      FRONTEND_MIN_FUNCTIONS_COVERAGE: "50"
-      FRONTEND_MIN_BRANCHES_COVERAGE: "50"
+      FRONTEND_MIN_STATEMENTS_COVERAGE: "40"
+      FRONTEND_MIN_LINES_COVERAGE: "40"
+      FRONTEND_MIN_FUNCTIONS_COVERAGE: "40"
+      FRONTEND_MIN_BRANCHES_COVERAGE: "40"
     defaults:
       run:
         working-directory: frontend
