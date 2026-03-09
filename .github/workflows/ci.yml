@@ -13,6 +13,9 @@ jobs:
   backend:
     name: Backend (Maven)
     runs-on: ubuntu-latest
+    env:
+      BACKEND_MIN_LINE_COVERAGE: "10"
+      BACKEND_MIN_BRANCH_COVERAGE: "10"
     defaults:
       run:
         working-directory: backend
@@ -30,6 +33,42 @@ jobs:
       - name: Build and test
         run: mvn -B clean verify
 
+      - name: Check backend coverage threshold
+        run: |
+          set -euo pipefail
+
+          CSV_FILE="target/site/jacoco/jacoco.csv"
+          if [ ! -f "$CSV_FILE" ]; then
+            echo "JaCoCo CSV report not found at $CSV_FILE"
+            exit 1
+          fi
+
+          awk -F, \
+            -v min_line="$BACKEND_MIN_LINE_COVERAGE" \
+            -v min_branch="$BACKEND_MIN_BRANCH_COVERAGE" '
+            NR > 1 {
+              line_missed += $8
+              line_covered += $9
+              branch_missed += $6
+              branch_covered += $7
+            }
+            END {
+              line_total = line_missed + line_covered
+              branch_total = branch_missed + branch_covered
+
+              line_pct = line_total > 0 ? (line_covered / line_total) * 100 : 0
+              branch_pct = branch_total > 0 ? (branch_covered / branch_total) * 100 : 0
+
+              printf "Backend line coverage: %.2f%% (min %s%%)\n", line_pct, min_line
+              printf "Backend branch coverage: %.2f%% (min %s%%)\n", branch_pct, min_branch
+
+              if (line_pct + 1e-9 < min_line || branch_pct + 1e-9 < min_branch) {
+                print "Backend coverage check failed"
+                exit 1
+              }
+            }
+          ' "$CSV_FILE"
+
       - name: Upload backend coverage
         if: always()
         uses: actions/upload-artifact@v4
@@ -41,6 +80,11 @@ jobs:
   frontend:
     name: Frontend (Vite)
     runs-on: ubuntu-latest
+    env:
+      FRONTEND_MIN_STATEMENTS_COVERAGE: "10"
+      FRONTEND_MIN_LINES_COVERAGE: "10"
+      FRONTEND_MIN_FUNCTIONS_COVERAGE: "10"
+      FRONTEND_MIN_BRANCHES_COVERAGE: "10"
     defaults:
       run:
         working-directory: frontend
@@ -59,7 +103,50 @@ jobs:
         run: npm ci
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: >-
+          npx vitest run --coverage
+          --coverage.reporter=text
+          --coverage.reporter=html
+          --coverage.reporter=json-summary
+
+      - name: Check frontend coverage threshold
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+
+          const summaryPath = "coverage/coverage-summary.json";
+          if (!fs.existsSync(summaryPath)) {
+            console.error(`Coverage summary not found at ${summaryPath}`);
+            process.exit(1);
+          }
+
+          const summary = JSON.parse(fs.readFileSync(summaryPath, "utf8"));
+          const total = summary.total;
+
+          const thresholds = {
+            statements: Number(process.env.FRONTEND_MIN_STATEMENTS_COVERAGE ?? 0),
+            lines: Number(process.env.FRONTEND_MIN_LINES_COVERAGE ?? 0),
+            functions: Number(process.env.FRONTEND_MIN_FUNCTIONS_COVERAGE ?? 0),
+            branches: Number(process.env.FRONTEND_MIN_BRANCHES_COVERAGE ?? 0),
+          };
+
+          const actual = {
+            statements: total.statements.pct,
+            lines: total.lines.pct,
+            functions: total.functions.pct,
+            branches: total.branches.pct,
+          };
+
+          for (const key of Object.keys(actual)) {
+            console.log(`Frontend ${key} coverage: ${actual[key]}% (min ${thresholds[key]}%)`);
+          }
+
+          const failed = Object.keys(actual).filter((key) => actual[key] + Number.EPSILON < thresholds[key]);
+          if (failed.length > 0) {
+            console.error(`Frontend coverage check failed for: ${failed.join(", ")}`);
+            process.exit(1);
+          }
+          NODE
 
       - name: Build
         run: npm run build
