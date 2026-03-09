@@ -129,6 +129,18 @@ class NoteServiceTest {
     }
 
     @Test
+    void deleteDeletesNoteWhenFound() {
+        UserEntity user = UserEntity.builder().id(1L).email("u@example.com").build();
+        NoteEntity note = NoteEntity.builder().id(42L).user(user).title("x").content("y").build();
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(noteRepository.findByIdAndUser(42L, user)).thenReturn(Optional.of(note));
+
+        noteService.delete(42L);
+
+        verify(noteRepository).delete(note);
+    }
+
+    @Test
     void createStoresNullColorWhenInputBlank() {
         UserEntity user = UserEntity.builder().id(1L).email("u@example.com").build();
         when(currentUserService.getCurrentUser()).thenReturn(user);
@@ -140,5 +152,76 @@ class NoteServiceTest {
         ArgumentCaptor<NoteEntity> noteCaptor = ArgumentCaptor.forClass(NoteEntity.class);
         verify(noteRepository).save(noteCaptor.capture());
         assertNull(noteCaptor.getValue().getNotesColor());
+    }
+
+    @Test
+    void createWithNullTagsDoesNotResolveOrCreateTags() {
+        UserEntity user = UserEntity.builder().id(1L).email("u@example.com").build();
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(noteRepository.save(any(NoteEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        NoteRequest request = new NoteRequest("Title", "Body", "#ffffff", null);
+        NoteResponse response = noteService.create(request);
+
+        verify(tagRepository, never()).findByUserAndNameIn(any(), anyCollection());
+        verify(tagRepository, never()).saveAll(any());
+        assertEquals(List.of(), response.tagNames());
+    }
+
+    @Test
+    void createStoresNullColorWhenInputIsNull() {
+        UserEntity user = UserEntity.builder().id(1L).email("u@example.com").build();
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(noteRepository.save(any(NoteEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        noteService.create(new NoteRequest("Title", "Body", null, List.of("work")));
+
+        ArgumentCaptor<NoteEntity> noteCaptor = ArgumentCaptor.forClass(NoteEntity.class);
+        verify(noteRepository).save(noteCaptor.capture());
+        assertNull(noteCaptor.getValue().getNotesColor());
+    }
+
+    @Test
+    void createWithOnlyBlankAndNullTagsSkipsTagRepositoryLookup() {
+        UserEntity user = UserEntity.builder().id(1L).email("u@example.com").build();
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(noteRepository.save(any(NoteEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        NoteResponse response = noteService.create(
+                new NoteRequest("Title", "Body", "#aabbcc", Arrays.asList("   ", null, "\t"))
+        );
+
+        verify(tagRepository, never()).findByUserAndNameIn(any(), anyCollection());
+        verify(tagRepository, never()).saveAll(any());
+        assertEquals(List.of(), response.tagNames());
+    }
+
+    @Test
+    void updateReplacesFieldsAndTagSet() {
+        UserEntity user = UserEntity.builder().id(1L).email("u@example.com").build();
+        NoteEntity note = NoteEntity.builder()
+                .id(42L)
+                .user(user)
+                .title("old")
+                .content("old-content")
+                .notesColor("#111111")
+                .createdAt(Instant.parse("2026-01-01T00:00:00Z"))
+                .updatedAt(Instant.parse("2026-01-01T00:00:00Z"))
+                .tags(new LinkedHashSet<>(Set.of(TagEntity.builder().name("oldtag").build())))
+                .build();
+        TagEntity work = TagEntity.builder().id(10L).user(user).name("work").build();
+
+        when(currentUserService.getCurrentUser()).thenReturn(user);
+        when(noteRepository.findByIdAndUser(42L, user)).thenReturn(Optional.of(note));
+        when(tagRepository.findByUserAndNameIn(eq(user), anyCollection())).thenReturn(List.of(work));
+        when(noteRepository.save(any(NoteEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        NoteRequest request = new NoteRequest("  New Title  ", "  New Content  ", "  #ABCDEF ", List.of(" WORK ", "work"));
+        NoteResponse response = noteService.update(42L, request);
+
+        assertEquals("New Title", note.getTitle());
+        assertEquals("New Content", note.getContent());
+        assertEquals("#abcdef", note.getNotesColor());
+        assertEquals(List.of("work"), response.tagNames());
     }
 }
