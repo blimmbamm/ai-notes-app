@@ -28,6 +28,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^2.1.9",
     "jsdom": "^25.0.1",
+    "msw": "^2.12.10",
     "vite": "^6.2.0",
     "vitest": "^2.1.9"
   }
