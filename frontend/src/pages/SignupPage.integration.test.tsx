@@ -98,3 +98,100 @@ test("shows backend validation error when password is too short", async () => {
 
   expect(await screen.findByText("Password must be at least 8 characters.")).toBeInTheDocument();
 });
+
+test("shows loading state while request is in flight", async () => {
+  const user = userEvent.setup();
+
+  server.use(
+    http.post("/api/auth/signup", async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return HttpResponse.json({ message: "ok" });
+    })
+  );
+
+  renderSignupPage();
+
+  await user.type(screen.getByLabelText("Email"), "new@example.com");
+  await user.type(screen.getByLabelText("Password"), "password123");
+  await user.click(screen.getByRole("button", { name: "Sign up" }));
+
+  const pendingButton = screen.getByRole("button", { name: "Creating account..." });
+  expect(pendingButton).toBeDisabled();
+
+  expect(
+    await screen.findByText("Signup succeeded. Check SMTP4DEV mail and verify your email.")
+  ).toBeInTheDocument();
+
+  expect(screen.getByRole("button", { name: "Sign up" })).toBeEnabled();
+});
+
+test("clears an error after a successful retry", async () => {
+  const user = userEvent.setup();
+
+  server.use(
+    http.post("/api/auth/signup", () =>
+      HttpResponse.json({ message: "Account already exists." }, { status: 409 })
+    )
+  );
+
+  renderSignupPage();
+
+  await user.type(screen.getByLabelText("Email"), "new@example.com");
+  await user.type(screen.getByLabelText("Password"), "password123");
+  await user.click(screen.getByRole("button", { name: "Sign up" }));
+
+  expect(await screen.findByText("Account already exists.")).toBeInTheDocument();
+
+  server.use(
+    http.post("/api/auth/signup", () => HttpResponse.json({ message: "ok" }))
+  );
+
+  await user.click(screen.getByRole("button", { name: "Sign up" }));
+
+  expect(
+    await screen.findByText("Signup succeeded. Check SMTP4DEV mail and verify your email.")
+  ).toBeInTheDocument();
+  expect(screen.queryByText("Account already exists.")).not.toBeInTheDocument();
+});
+
+test("shows a generic server error for a 500 response", async () => {
+  const user = userEvent.setup();
+
+  server.use(
+    http.post("/api/auth/signup", () =>
+      HttpResponse.text("Server error", { status: 500 })
+    )
+  );
+
+  renderSignupPage();
+
+  await user.type(screen.getByLabelText("Email"), "new@example.com");
+  await user.type(screen.getByLabelText("Password"), "password123");
+  await user.click(screen.getByRole("button", { name: "Sign up" }));
+
+  expect(await screen.findByText("Request failed with status 500")).toBeInTheDocument();
+});
+
+test("shows a network error when the request fails to reach the server", async () => {
+  const user = userEvent.setup();
+
+  server.use(
+    http.post("/api/auth/signup", () => HttpResponse.error())
+  );
+
+  renderSignupPage();
+
+  await user.type(screen.getByLabelText("Email"), "new@example.com");
+  await user.type(screen.getByLabelText("Password"), "password123");
+  await user.click(screen.getByRole("button", { name: "Sign up" }));
+
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent(/Failed to fetch|fetch failed|Request failed/i);
+});
+
+test("links to the login page", () => {
+  renderSignupPage();
+
+  expect(screen.getByRole("link", { name: "Already have an account? Login" }))
+    .toHaveAttribute("href", "/login");
+});
