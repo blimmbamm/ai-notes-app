@@ -29,23 +29,37 @@ export default function NotesTagSidenav({
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
 
   const content = (
-    <Box sx={{ width: "100%", maxWidth: width, overflowX: "hidden" }}>
+    <Box data-testid="tags-sidenav" sx={{ width: "100%", maxWidth: width, overflowX: "hidden" }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1, py: 1 }}>
-        <Typography variant="h6" sx={{ px: 1 }}>
+        <Typography variant="h6" sx={{ px: 1 }} data-testid="tags-title">
           Tags
         </Typography>
-        <IconButton size="small" onClick={() => setManageDialogOpen(true)} aria-label="Manage tags">
+        <IconButton
+          size="small"
+          onClick={() => setManageDialogOpen(true)}
+          aria-label="Manage tags"
+          data-testid="tags-manage"
+        >
           <SettingsIcon fontSize="small" />
         </IconButton>
       </Stack>
 
       <List disablePadding sx={{ overflowX: "hidden" }}>
-        <ListItemButton selected={selectedTag === ""} onClick={() => onSelectTag(null)}>
+        <ListItemButton
+          selected={selectedTag === ""}
+          onClick={() => onSelectTag(null)}
+          data-testid="tag-filter-all"
+        >
           <ListItemText primary="All" primaryTypographyProps={{ noWrap: true }} />
         </ListItemButton>
 
         {tags.map((tagName) => (
-          <ListItemButton key={tagName} selected={selectedTag === tagName} onClick={() => onSelectTag(tagName)}>
+          <ListItemButton
+            key={tagName}
+            selected={selectedTag === tagName}
+            onClick={() => onSelectTag(tagName)}
+            data-testid="tag-filter-item"
+          >
             <ListItemText primary={tagName} primaryTypographyProps={{ noWrap: true }} />
           </ListItemButton>
         ))}

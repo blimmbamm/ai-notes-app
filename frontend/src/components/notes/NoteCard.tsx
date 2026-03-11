@@ -41,18 +41,31 @@ export default function NoteCard({
   onDelete,
 }: NoteCardProps) {
   return (
-    <Card sx={{ backgroundColor: note.colorHex ?? "background.paper" }}>
+    <Card data-testid="note-card" sx={{ backgroundColor: note.colorHex ?? "background.paper" }}>
       <CardContent>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-          <Typography variant="h6">{note.title}</Typography>
+          <Typography variant="h6" data-testid="note-title">
+            {note.title}
+          </Typography>
           <Stack direction="row" spacing={1}>
-            <IconButton size="small" aria-label="Change note color" onClick={onOpenPalette}>
+            <IconButton
+              size="small"
+              aria-label="Change note color"
+              data-testid="note-color"
+              onClick={onOpenPalette}
+            >
               <PaletteIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" aria-label="Edit note" onClick={onEdit}>
+            <IconButton size="small" aria-label="Edit note" data-testid="note-edit" onClick={onEdit}>
               <EditIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" aria-label="Delete note" color="error" onClick={onDelete}>
+            <IconButton
+              size="small"
+              aria-label="Delete note"
+              data-testid="note-delete"
+              color="error"
+              onClick={onDelete}
+            >
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Stack>
@@ -61,13 +74,19 @@ export default function NoteCard({
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
           Last modified: {note.updatedAt.toLocaleString()}
         </Typography>
-        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mb: 1.5 }}>
+        <Typography variant="body2" data-testid="note-content" sx={{ whiteSpace: "pre-wrap", mb: 1.5 }}>
           {note.content}
         </Typography>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", minHeight: 32 }}>
           {note.tagNames.map((tagName) => (
-            <Chip key={tagName} size="small" label={tagName} onDelete={() => onTagRemove(tagName)} />
+            <Chip
+              key={tagName}
+              size="small"
+              label={tagName}
+              data-testid="note-tag"
+              onDelete={() => onTagRemove(tagName)}
+            />
           ))}
 
           <Autocomplete
@@ -87,6 +106,10 @@ export default function NoteCard({
                 {...params}
                 variant="standard"
                 placeholder="Add tags..."
+                inputProps={{
+                  ...params.inputProps,
+                  "data-testid": "note-tag-input",
+                }}
                 onFocus={onTagInputFocus}
                 onBlur={() => onTagSubmit(tagInputValue)}
                 onKeyDown={(event) => {

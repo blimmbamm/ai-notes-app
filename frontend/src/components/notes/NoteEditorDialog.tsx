@@ -40,7 +40,7 @@ export default function NoteEditorDialog({
   onColorChange,
 }: NoteEditorDialogProps) {
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" data-testid="note-editor-dialog">
       <Box component="form" onSubmit={onSubmit}>
         <DialogTitle>{isEditing ? "Edit note" : "Add note"}</DialogTitle>
         <DialogContent>
@@ -50,6 +50,7 @@ export default function NoteEditorDialog({
             label="Title"
             margin="normal"
             value={form.title}
+            inputProps={{ "data-testid": "note-title-input" }}
             onChange={(event) => onTitleChange(event.target.value)}
           />
           <TextField
@@ -59,6 +60,7 @@ export default function NoteEditorDialog({
             multiline
             minRows={5}
             value={form.content}
+            inputProps={{ "data-testid": "note-content-input" }}
             onChange={(event) => onContentChange(event.target.value)}
           />
 
@@ -94,8 +96,10 @@ export default function NoteEditorDialog({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={isPending}>
+          <Button onClick={onClose} data-testid="note-editor-cancel">
+            Cancel
+          </Button>
+          <Button type="submit" variant="contained" disabled={isPending} data-testid="note-editor-submit">
             {isEditing ? "Save" : "Create"}
           </Button>
         </DialogActions>

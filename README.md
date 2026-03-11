@@ -40,6 +40,57 @@ npm run dev
 
 This setup is faster than rebuilding app images on each code change.
 
+## E2E Tests (Playwright)
+Install browsers (one-time):
+```bash
+cd frontend
+npm run e2e:install
+```
+
+Run against Vite dev server (default `E2E_BASE_URL=http://localhost:5173`):
+```bash
+cd frontend
+npm run e2e
+```
+
+Run against Dockerized frontend (nginx on port 80):
+```bash
+cd frontend
+npm run e2e:up
+E2E_BASE_URL=http://localhost npm run e2e
+npm run e2e:down
+```
+
+Optional API override (skip proxies):
+```bash
+E2E_API_BASE_URL=http://localhost:8080 npm run e2e
+```
+
+UI mode (watch-style):
+```bash
+npm run e2e:ui
+```
+
+Debug a single test:
+```bash
+npx playwright test e2e/notes-tags.spec.ts --debug
+```
+
+Debug by name:
+```bash
+npx playwright test -g "manage note tags" --debug
+```
+
+Debug by line:
+```bash
+npx playwright test e2e/notes-tags.spec.ts:3 --debug
+```
+
+Trace viewer (after a failure):
+```bash
+npx playwright show-trace frontend/test-results/**/trace.zip
+```
+
 ## CORS in Dev
 You do not need CORS for this dev setup, because Vite proxies `/api` to `http://localhost:8080`.
 From the browser perspective, requests still go to the Vite origin, so there is no cross-origin request.

@@ -17,7 +17,13 @@ interface DeleteNoteDialogProps {
 
 export default function DeleteNoteDialog({ note, isPending, onCancel, onConfirm }: DeleteNoteDialogProps) {
   return (
-    <Dialog open={note !== null} onClose={() => !isPending && onCancel()} maxWidth="xs" fullWidth>
+    <Dialog
+      open={note !== null}
+      onClose={() => !isPending && onCancel()}
+      maxWidth="xs"
+      fullWidth
+      data-testid="note-delete-dialog"
+    >
       <DialogTitle>Delete note?</DialogTitle>
       <DialogContent>
         <DialogContentText>
@@ -27,10 +33,16 @@ export default function DeleteNoteDialog({ note, isPending, onCancel, onConfirm 
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel} disabled={isPending}>
+        <Button onClick={onCancel} disabled={isPending} data-testid="note-delete-cancel">
           Cancel
         </Button>
-        <Button color="error" variant="contained" disabled={!note || isPending} onClick={onConfirm}>
+        <Button
+          color="error"
+          variant="contained"
+          disabled={!note || isPending}
+          onClick={onConfirm}
+          data-testid="note-delete-confirm"
+        >
           Delete
         </Button>
       </DialogActions>
