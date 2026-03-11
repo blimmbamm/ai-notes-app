@@ -46,13 +46,13 @@ export default function NoteCard({
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
           <Typography variant="h6">{note.title}</Typography>
           <Stack direction="row" spacing={1}>
-            <IconButton size="small" onClick={onOpenPalette}>
+            <IconButton size="small" aria-label="Change note color" onClick={onOpenPalette}>
               <PaletteIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" onClick={onEdit}>
+            <IconButton size="small" aria-label="Edit note" onClick={onEdit}>
               <EditIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" color="error" onClick={onDelete}>
+            <IconButton size="small" aria-label="Delete note" color="error" onClick={onDelete}>
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Stack>
@@ -108,4 +108,3 @@ export default function NoteCard({
     </Card>
   );
 }
-

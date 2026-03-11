@@ -219,21 +219,45 @@ export default function ManageTagsDialog({
                 secondaryAction={
                   <Stack direction="row" spacing={0.5}>
                     {!isEditingThis && (
-                      <IconButton edge="end" size="small" onClick={() => startRename(tagName)} disabled={isSubmitting}>
+                      <IconButton
+                        edge="end"
+                        size="small"
+                        aria-label="Rename tag"
+                        onClick={() => startRename(tagName)}
+                        disabled={isSubmitting}
+                      >
                         <EditIcon fontSize="small" />
                       </IconButton>
                     )}
                     {isEditingThis && (
                       <>
-                        <IconButton edge="end" size="small" onClick={() => void handleRename()} disabled={isSubmitting}>
+                        <IconButton
+                          edge="end"
+                          size="small"
+                          aria-label="Confirm rename"
+                          onClick={() => void handleRename()}
+                          disabled={isSubmitting}
+                        >
                           <CheckIcon fontSize="small" />
                         </IconButton>
-                        <IconButton edge="end" size="small" onClick={cancelRename} disabled={isSubmitting}>
+                        <IconButton
+                          edge="end"
+                          size="small"
+                          aria-label="Cancel rename"
+                          onClick={cancelRename}
+                          disabled={isSubmitting}
+                        >
                           <CloseIcon fontSize="small" />
                         </IconButton>
                       </>
                     )}
-                    <IconButton edge="end" size="small" onClick={() => void handleDelete(tagName)} disabled={isSubmitting}>
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      aria-label="Delete tag"
+                      onClick={() => void handleDelete(tagName)}
+                      disabled={isSubmitting}
+                    >
                       <DeleteOutlineIcon fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -282,4 +306,3 @@ export default function ManageTagsDialog({
     </Dialog>
   );
 }
-

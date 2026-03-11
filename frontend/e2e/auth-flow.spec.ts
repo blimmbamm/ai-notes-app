@@ -6,6 +6,8 @@ function uniqueEmail() {
   return `e2e+${stamp}@example.com`;
 }
 
+test.use({ storageState: { cookies: [], origins: [] } });
+
 test("signup, verify, login, create note", async ({ page }) => {
   const email = uniqueEmail();
   const password = "Password123!";
