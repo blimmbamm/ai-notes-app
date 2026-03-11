@@ -201,7 +201,8 @@ jobs:
         run: |
           set -euo pipefail
           for i in {1..60}; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/auth/login || true)
+            code=$(curl -sS --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://localhost:8080/api/auth/login || true)
+            echo "Backend direct http code: $code"
             if [ "$code" -ge 400 ] && [ "$code" -lt 500 ]; then
               echo "Backend ready (direct): HTTP $code"
               break
@@ -210,7 +211,8 @@ jobs:
           done
 
           for i in {1..60}; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/auth/login || true)
+            code=$(curl -sS --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://localhost/api/auth/login || true)
+            echo "Backend nginx http code: $code"
             if [ "$code" -ge 400 ] && [ "$code" -lt 500 ]; then
               echo "Backend ready (via nginx): HTTP $code"
               exit 0
