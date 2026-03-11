@@ -27,7 +27,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-        smtp4dev: service_started
+      smtp4dev: 
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notesdb
       SPRING_DATASOURCE_USERNAME: notes
