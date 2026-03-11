@@ -3,7 +3,6 @@ package com.example.notesapp.security;
 import com.example.notesapp.config.AppProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
@@ -30,7 +29,7 @@ public class JwtService {
                 .subject(email)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .signWith(getKey(), Jwts.SIG.HS256)
                 .compact();
     }
 

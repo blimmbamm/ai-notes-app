@@ -8,7 +8,6 @@ import com.example.notesapp.repository.TagRepository;
 import com.example.notesapp.repository.UserRepository;
 import com.example.notesapp.security.JwtService;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
@@ -256,7 +255,7 @@ class NotesSecurityIntegrationTest {
                 .subject(email)
                 .issuedAt(Date.from(issuedAt))
                 .expiration(Date.from(expiresAt))
-                .signWith(jwtKey(), SignatureAlgorithm.HS256)
+                .signWith(jwtKey(), Jwts.SIG.HS256)
                 .compact();
     }
 
