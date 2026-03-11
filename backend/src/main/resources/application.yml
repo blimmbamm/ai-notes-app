@@ -26,6 +26,12 @@ spring:
           starttls:
             enable: false
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health"
+
 app:
   frontend-url: ${FRONTEND_URL:http://localhost}
   jwt:
