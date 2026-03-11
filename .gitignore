@@ -11,3 +11,5 @@ backend/target/
 instructions.md
 instructions_later.md
 frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/

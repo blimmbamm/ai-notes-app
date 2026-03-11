@@ -34,7 +34,7 @@ export default function AppTopBar({
     <AppBar position="static" color="secondary">
       <Toolbar>
         {showMenuButton && (
-          <IconButton color="inherit" onClick={onMenuClick} edge="start" sx={{ mr: 1 }}>
+          <IconButton color="inherit" aria-label="Open navigation" onClick={onMenuClick} edge="start" sx={{ mr: 1 }}>
             <MenuIcon />
           </IconButton>
         )}
@@ -52,7 +52,7 @@ export default function AppTopBar({
           Notes App
         </Typography>
 
-        <IconButton color="inherit" onClick={onOpenMenu}>
+        <IconButton color="inherit" aria-label="Account menu" onClick={onOpenMenu}>
           <AccountCircleIcon />
         </IconButton>
 
