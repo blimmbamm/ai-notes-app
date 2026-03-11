@@ -188,45 +188,38 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.yml logs --tail=200 backend
 
-
-      - name: Wait for services
+      - name: Wait for postgres
         run: |
-          set -euo pipefail
           for i in {1..60}; do
-            if nc -z localhost 80 && nc -z localhost 8080 && nc -z localhost 5432; then
-              echo "Services are up."
+            if docker compose exec -T postgres pg_isready -U notes -d notesdb; then
+              echo "Postgres ready"
               exit 0
             fi
             sleep 2
           done
-          echo "Timed out waiting for services."
+          echo "Postgres did not become ready"
+          docker compose logs postgres
           exit 1
 
-      - name: Wait for backend readiness
+      - name: Wait for backend
         run: |
-          set -euo pipefail
           for i in {1..60}; do
-            code=$(curl -sS --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://localhost:8080/api/auth/login || true)
-            echo "Backend direct http code: $code"
-            if [ "$code" -ge 400 ] && [ "$code" -lt 500 ]; then
-              echo "Backend ready (direct): HTTP $code"
-              break
-            fi
-            sleep 2
-          done
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/auth/login || true)
+            echo "Backend status: $code"
 
-          for i in {1..60}; do
-            code=$(curl -sS --connect-timeout 2 --max-time 5 -o /dev/null -w "%{http_code}" http://localhost/api/auth/login || true)
-            echo "Backend nginx http code: $code"
             if [ "$code" -ge 400 ] && [ "$code" -lt 500 ]; then
-              echo "Backend ready (via nginx): HTTP $code"
+              echo "Backend ready"
               exit 0
             fi
+
             sleep 2
           done
 
-          echo "Timed out waiting for backend readiness."
+          echo "Backend did not become ready"
+          docker compose logs backend
           exit 1
+
+      
 
       - name: Run Playwright tests
         working-directory: frontend
@@ -245,3 +238,11 @@ jobs:
       - name: Stop stack
         if: always()
         run: docker compose -f docker-compose.yml down
+
+      - name: Dump Docker status
+        if: always()
+        run: |
+          set +e
+          docker compose -f docker-compose.yml ps
+          docker ps -a
+          docker compose -f docker-compose.yml logs --tail=200 backend || true
