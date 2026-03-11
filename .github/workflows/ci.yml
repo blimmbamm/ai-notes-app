@@ -197,6 +197,30 @@ jobs:
           echo "Timed out waiting for services."
           exit 1
 
+      - name: Wait for backend readiness
+        run: |
+          set -euo pipefail
+          for i in {1..60}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/auth/login || true)
+            if [ "$code" -ge 400 ] && [ "$code" -lt 500 ]; then
+              echo "Backend ready (direct): HTTP $code"
+              break
+            fi
+            sleep 2
+          done
+
+          for i in {1..60}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/api/auth/login || true)
+            if [ "$code" -ge 400 ] && [ "$code" -lt 500 ]; then
+              echo "Backend ready (via nginx): HTTP $code"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Timed out waiting for backend readiness."
+          exit 1
+
       - name: Run Playwright tests
         working-directory: frontend
         env:
