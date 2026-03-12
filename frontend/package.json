@@ -14,7 +14,10 @@
     "e2e:ui": "playwright test --ui",
     "e2e:install": "playwright install --with-deps",
     "e2e:up": "docker compose -f ../docker-compose.yml up -d --build",
-    "e2e:down": "docker compose -f ../docker-compose.yml down"
+    "e2e:down": "docker compose -f ../docker-compose.yml down",
+    "e2e:up:testdb": "docker compose -f ../docker-compose.yml -f ../docker-compose.e2e.yml up -d --build",
+    "e2e:down:testdb": "docker compose -f ../docker-compose.yml -f ../docker-compose.e2e.yml down",
+    "e2e:testdb": "E2E_DB_HOST=localhost E2E_DB_PORT=5433 E2E_DB_USER=notes E2E_DB_PASSWORD=notes E2E_DB_NAME=notesdb_e2e playwright test"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
