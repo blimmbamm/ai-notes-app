@@ -3,9 +3,7 @@ package com.example.notesapp.service;
 import com.example.notesapp.config.AppProperties;
 import com.example.notesapp.dto.AuthResponse;
 import com.example.notesapp.dto.LoginRequest;
-import com.example.notesapp.dto.LogoutRequest;
 import com.example.notesapp.dto.PasswordResetConfirmRequest;
-import com.example.notesapp.dto.RefreshRequest;
 import com.example.notesapp.dto.SignupRequest;
 import com.example.notesapp.entity.EmailVerificationTokenEntity;
 import com.example.notesapp.entity.PasswordResetTokenEntity;
@@ -205,7 +203,7 @@ class AuthServiceTest {
     void refreshThrowsWhenTokenInvalid() {
         when(refreshTokenRepository.findByToken("bad")).thenReturn(Optional.empty());
 
-        assertThrows(BadRequestException.class, () -> authService.refresh(new RefreshRequest("bad")));
+        assertThrows(BadRequestException.class, () -> authService.refresh("bad"));
     }
 
     @Test
@@ -218,7 +216,7 @@ class AuthServiceTest {
                 .build();
         when(refreshTokenRepository.findByToken("expired")).thenReturn(Optional.of(refreshToken));
 
-        assertThrows(BadRequestException.class, () -> authService.refresh(new RefreshRequest("expired")));
+        assertThrows(BadRequestException.class, () -> authService.refresh("expired"));
 
         verify(refreshTokenRepository).delete(refreshToken);
     }
@@ -235,7 +233,7 @@ class AuthServiceTest {
         when(jwtService.generateAccessToken("u@example.com")).thenReturn("access-token");
         when(jwtService.accessTokenExpiresInSeconds()).thenReturn(900L);
 
-        AuthResponse response = authService.refresh(new RefreshRequest("valid"));
+        AuthResponse response = authService.refresh("valid");
 
         assertEquals("access-token", response.accessToken());
         assertEquals("Bearer", response.tokenType());
@@ -245,7 +243,7 @@ class AuthServiceTest {
 
     @Test
     void logoutDeletesTokenByValue() {
-        authService.logout(new LogoutRequest("rt-1"));
+        authService.logout("rt-1");
 
         verify(refreshTokenRepository).deleteByToken("rt-1");
     }

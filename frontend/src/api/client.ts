@@ -1,4 +1,4 @@
-import type { ApiAuthResponse, ApiErrorResponse } from "../types/api";
+import type { ApiErrorResponse } from "../types/api";
 import type { AuthSession } from "../types/auth";
 
 const API_BASE = "/api";
@@ -30,58 +30,41 @@ export async function apiFetch<TApi, TModel = TApi>(
   allowRefresh = true,
   mapResponse?: Mapper<TApi, TModel>
 ): Promise<TModel> {
-  let headers: HeadersInit = {
+  const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
   };
 
-  if (auth?.accessToken) {
-    headers = {
-      ...headers,
-      Authorization: `Bearer ${auth.accessToken}`,
-    };
-  }
-
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
+    credentials: "same-origin",
   });
 
   const shouldTryRefresh =
     (response.status === 401 || response.status === 403) &&
     allowRefresh &&
-    Boolean(auth?.refreshToken);
+    path !== "/auth/refresh" &&
+    path !== "/auth/login";
 
-  if (shouldTryRefresh && auth) {
+  if (shouldTryRefresh) {
     const refreshResponse = await fetch(`${API_BASE}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: auth.refreshToken }),
+      credentials: "same-origin",
     });
 
     if (refreshResponse.ok) {
-      const refreshData = await parseJson<ApiAuthResponse>(refreshResponse);
-      if (!refreshData) {
-        auth.logout();
-        throw new Error("Session refresh failed. Please login again.");
-      }
-
-      auth.setTokens(refreshData.accessToken, refreshData.refreshToken);
-
       return apiFetch<TApi, TModel>(
         path,
         options,
-        {
-          ...auth,
-          accessToken: refreshData.accessToken,
-          refreshToken: refreshData.refreshToken,
-        },
+        auth,
         false,
         mapResponse
       );
     }
 
-    auth.logout();
+    auth?.logout();
     throw new Error("Session expired. Please login again.");
   }
 

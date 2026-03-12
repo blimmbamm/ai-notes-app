@@ -1,5 +1,4 @@
-import { mapAuthResponse } from "../mappers/authMapper";
-import type { ApiAuthResponse, ApiMessageResponse, AuthTokensResponse } from "../types/api";
+import type { ApiMessageResponse } from "../types/api";
 import type { AuthSession } from "../types/auth";
 import { apiFetch } from "./client";
 
@@ -11,10 +10,6 @@ export interface SignupRequest {
 export interface LoginRequest {
   email: string;
   password: string;
-}
-
-export interface LogoutRequest {
-  refreshToken: string;
 }
 
 export interface PasswordResetRequest {
@@ -38,24 +33,22 @@ export function verifyEmail(token: string): Promise<ApiMessageResponse> {
 }
 
 export function login(payload: LoginRequest) {
-  return apiFetch<ApiAuthResponse, AuthTokensResponse>(
+  return apiFetch<ApiMessageResponse>(
     "/auth/login",
     {
       method: "POST",
       body: JSON.stringify(payload),
     },
     null,
-    true,
-    mapAuthResponse
+    false
   );
 }
 
-export function logout(payload: LogoutRequest, auth: AuthSession): Promise<ApiMessageResponse> {
+export function logout(auth: AuthSession): Promise<ApiMessageResponse> {
   return apiFetch<ApiMessageResponse>(
     "/auth/logout",
     {
       method: "POST",
-      body: JSON.stringify(payload),
     },
     auth
   );

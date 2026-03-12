@@ -27,11 +27,10 @@ vi.mock("../api/authApi", () => ({
 
 vi.mock("../context/AuthContext", () => ({
   useAuth: () => ({
-    accessToken: "token",
-    refreshToken: "refresh",
-    setTokens: vi.fn(),
     logout: vi.fn(),
     isAuthenticated: true,
+    isLoading: false,
+    setAuthenticated: vi.fn(),
   }),
 }));
 

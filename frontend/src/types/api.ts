@@ -9,12 +9,6 @@ export interface ApiMessageResponse {
   message: string;
 }
 
-export interface ApiAuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresInSeconds: number;
-}
 
 export interface ApiNote {
   id: number;
@@ -59,11 +53,4 @@ export interface NoteInput {
   content: string;
   colorHex: string | null;
   tagNames: string[];
-}
-
-export interface AuthTokensResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresInSeconds: number;
 }

@@ -3,10 +3,9 @@ package com.example.notesapp.service;
 import com.example.notesapp.config.AppProperties;
 import com.example.notesapp.dto.AuthResponse;
 import com.example.notesapp.dto.LoginRequest;
-import com.example.notesapp.dto.LogoutRequest;
 import com.example.notesapp.dto.PasswordResetConfirmRequest;
-import com.example.notesapp.dto.RefreshRequest;
 import com.example.notesapp.dto.SignupRequest;
+import com.example.notesapp.entity.AuthProvider;
 import com.example.notesapp.entity.EmailVerificationTokenEntity;
 import com.example.notesapp.entity.PasswordResetTokenEntity;
 import com.example.notesapp.entity.RefreshTokenEntity;
@@ -17,11 +16,12 @@ import com.example.notesapp.repository.PasswordResetTokenRepository;
 import com.example.notesapp.repository.RefreshTokenRepository;
 import com.example.notesapp.repository.UserRepository;
 import com.example.notesapp.security.JwtService;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.context.annotation.Lazy;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -45,7 +45,7 @@ public class AuthService {
                        RefreshTokenRepository refreshTokenRepository,
                        PasswordResetTokenRepository passwordResetTokenRepository,
                        PasswordEncoder passwordEncoder,
-                       AuthenticationManager authenticationManager,
+                       @Lazy AuthenticationManager authenticationManager,
                        JwtService jwtService,
                        AppProperties appProperties,
                        EmailService emailService) {
@@ -69,6 +69,7 @@ public class AuthService {
         UserEntity user = UserEntity.builder()
                 .email(request.email().trim().toLowerCase())
                 .passwordHash(passwordEncoder.encode(request.password()))
+                .authProvider(AuthProvider.LOCAL)
                 .enabled(false)
                 .createdAt(Instant.now())
                 .build();
@@ -103,12 +104,16 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
+        UserEntity user = userRepository.findByEmailIgnoreCase(request.email())
+                .orElseThrow(() -> new BadRequestException("Invalid credentials"));
+
+        if (user.getAuthProvider() != AuthProvider.LOCAL) {
+            throw new BadRequestException("Please sign in with Google");
+        }
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email().trim().toLowerCase(), request.password())
         );
-
-        UserEntity user = userRepository.findByEmailIgnoreCase(request.email())
-                .orElseThrow(() -> new BadRequestException("Invalid credentials"));
 
         if (!user.isEnabled()) {
             throw new BadRequestException("Please verify your email before login");
@@ -118,8 +123,8 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse refresh(RefreshRequest request) {
-        RefreshTokenEntity refreshToken = refreshTokenRepository.findByToken(request.refreshToken())
+    public AuthResponse refresh(String refreshTokenValue) {
+        RefreshTokenEntity refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
                 .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
 
         if (refreshToken.getExpiresAt().isBefore(Instant.now())) {
@@ -131,8 +136,8 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(LogoutRequest request) {
-        refreshTokenRepository.deleteByToken(request.refreshToken());
+    public void logout(String refreshTokenValue) {
+        refreshTokenRepository.deleteByToken(refreshTokenValue);
     }
 
     @Transactional
@@ -171,7 +176,7 @@ public class AuthService {
         passwordResetTokenRepository.deleteByUser(user);
     }
 
-    private AuthResponse issueTokens(UserEntity user) {
+    public AuthResponse issueTokens(UserEntity user) {
         String accessToken = jwtService.generateAccessToken(user.getEmail());
         String refreshTokenValue = UUID.randomUUID().toString() + UUID.randomUUID();
 

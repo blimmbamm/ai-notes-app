@@ -8,7 +8,7 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:notes}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
@@ -25,6 +25,17 @@ spring:
           auth: false
           starttls:
             enable: false
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope:
+              - openid
+              - email
+              - profile
 
 management:
   endpoints:
@@ -34,8 +45,15 @@ management:
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost}
+  auth:
+    cookies:
+      access-token-name: ${AUTH_ACCESS_COOKIE:access_token}
+      refresh-token-name: ${AUTH_REFRESH_COOKIE:refresh_token}
+      same-site: ${AUTH_COOKIE_SAMESITE:Lax}
+      secure: ${AUTH_COOKIE_SECURE:false}
+      domain: ${AUTH_COOKIE_DOMAIN:}
   jwt:
     secret: ${JWT_SECRET:change-this-secret-to-a-long-random-value-change-this-secret}
-    access-token-minutes: 15
+    access-token-minutes: 5
     refresh-token-days: 14
     reset-token-minutes: 60

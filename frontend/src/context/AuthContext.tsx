@@ -1,45 +1,72 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { PropsWithChildren } from "react";
 import type { AuthContextValue } from "../types/auth";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function readToken(key: "accessToken" | "refreshToken"): string {
-  return localStorage.getItem(key) || "";
-}
-
 export function AuthProvider({ children }: PropsWithChildren) {
-  const [accessToken, setAccessToken] = useState<string>(() => readToken("accessToken"));
-  const [refreshToken, setRefreshToken] = useState<string>(() => readToken("refreshToken"));
+  const [isAuthenticated, setAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const setTokens = (nextAccessToken: string, nextRefreshToken: string) => {
-    setAccessToken(nextAccessToken || "");
-    setRefreshToken(nextRefreshToken || "");
+  const logout = () => setAuthenticated(false);
 
-    if (nextAccessToken) {
-      localStorage.setItem("accessToken", nextAccessToken);
-    } else {
-      localStorage.removeItem("accessToken");
-    }
+  useEffect(() => {
+    let cancelled = false;
 
-    if (nextRefreshToken) {
-      localStorage.setItem("refreshToken", nextRefreshToken);
-    } else {
-      localStorage.removeItem("refreshToken");
-    }
-  };
+    const loadSession = async () => {
+      try {
+        const response = await fetch("/api/account/me", { credentials: "same-origin" });
+        if (response.ok) {
+          if (!cancelled) {
+            setAuthenticated(true);
+          }
+          return;
+        }
 
-  const logout = () => setTokens("", "");
+        if (response.status === 401 || response.status === 403) {
+          const refreshResponse = await fetch("/api/auth/refresh", {
+            method: "POST",
+            credentials: "same-origin",
+          });
+
+          if (refreshResponse.ok) {
+            const retry = await fetch("/api/account/me", { credentials: "same-origin" });
+            if (!cancelled) {
+              setAuthenticated(retry.ok);
+            }
+            return;
+          }
+        }
+
+        if (!cancelled) {
+          setAuthenticated(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setAuthenticated(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      accessToken,
-      refreshToken,
-      isAuthenticated: Boolean(accessToken) && Boolean(refreshToken),
-      setTokens,
+      isAuthenticated,
+      isLoading,
+      setAuthenticated,
       logout,
     }),
-    [accessToken, refreshToken]
+    [isAuthenticated, isLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -136,6 +136,20 @@ Current cleanup migration:
 3. Login.
 4. Use notes page to create/edit/delete notes.
 
+## Google OAuth (Optional)
+Set these env vars before starting the backend:
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+
+OAuth login uses HttpOnly cookies for access/refresh tokens and redirects back to `${FRONTEND_URL}/notes`.
+
+### .env support
+The backend loads a `.env` file in `backend/` if present (KEY=VALUE format). Example:
+```
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+```
+
 ## Backend API
 - `POST /api/auth/signup`
 - `GET /api/auth/verify?token=...`

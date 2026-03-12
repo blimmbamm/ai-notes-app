@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Link, TextField } from "@mui/material";
+import { Alert, Box, Button, Divider, Link, Stack, TextField, Typography } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { NavLink } from "react-router-dom";
@@ -8,25 +8,41 @@ import { useAuth } from "../context/AuthContext";
 import { getErrorMessage } from "../utils/error";
 
 export default function LoginPage() {
-  const { setTokens } = useAuth();
+  const { setAuthenticated } = useAuth();
   const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
 
   const mutation = useMutation({
     mutationFn: login,
-    onSuccess: (data) => {
-      setTokens(data.accessToken, data.refreshToken);
+    onSuccess: () => {
+      setAuthenticated(true);
     },
   });
 
   return (
     <AuthLayout title="Login">
-      <Box
-        component="form"
-        onSubmit={(event: FormEvent<HTMLFormElement>) => {
-          event.preventDefault();
-          mutation.mutate(form);
-        }}
-      >
+      <Stack spacing={2}>
+        <Button
+          variant="outlined"
+          component="a"
+          href="/oauth2/authorization/google"
+          sx={{ textTransform: "none" }}
+        >
+          Continue with Google
+        </Button>
+
+        <Divider>
+          <Typography variant="caption" color="text.secondary">
+            or
+          </Typography>
+        </Divider>
+
+        <Box
+          component="form"
+          onSubmit={(event: FormEvent<HTMLFormElement>) => {
+            event.preventDefault();
+            mutation.mutate(form);
+          }}
+        >
         <TextField
           fullWidth
           label="Email"
@@ -57,7 +73,8 @@ export default function LoginPage() {
         <Link component={NavLink} to="/signup" sx={{ display: "inline-block", mt: 2 }}>
           No account yet? Sign up
         </Link>
-      </Box>
+        </Box>
+      </Stack>
     </AuthLayout>
   );
 }

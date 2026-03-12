@@ -15,7 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { deleteAccount, getAccount, requestCurrentUserPasswordReset } from "../api/accountApi";
 import { logout as logoutApi } from "../api/authApi";
 import AppTopBar from "../components/AppTopBar";
@@ -26,34 +26,24 @@ export default function AccountPage() {
   const auth = useAuth();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const authPayload = useMemo(
-    () => ({
-      accessToken: auth.accessToken,
-      refreshToken: auth.refreshToken,
-      setTokens: auth.setTokens,
-      logout: auth.logout,
-    }),
-    [auth.accessToken, auth.refreshToken, auth.setTokens, auth.logout]
-  );
-
   const accountQuery = useQuery({
     queryKey: ["account"],
-    queryFn: () => getAccount(authPayload),
+    queryFn: () => getAccount(auth),
   });
 
   const logoutMutation = useMutation({
-    mutationFn: () => logoutApi({ refreshToken: auth.refreshToken }, authPayload),
+    mutationFn: () => logoutApi(auth),
     onSettled: () => {
       auth.logout();
     },
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: () => requestCurrentUserPasswordReset(authPayload),
+    mutationFn: () => requestCurrentUserPasswordReset(auth),
   });
 
   const deleteAccountMutation = useMutation({
-    mutationFn: () => deleteAccount(authPayload),
+    mutationFn: () => deleteAccount(auth),
     onSuccess: () => {
       auth.logout();
     },

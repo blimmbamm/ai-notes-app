@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -35,6 +36,9 @@ class JwtAuthenticationFilterTest {
     private CustomUserDetailsService userDetailsService;
 
     @Mock
+    private AuthCookieService authCookieService;
+
+    @Mock
     private FilterChain filterChain;
 
     @InjectMocks
@@ -43,6 +47,12 @@ class JwtAuthenticationFilterTest {
     @AfterEach
     void clearContext() {
         SecurityContextHolder.clearContext();
+    }
+
+    @org.junit.jupiter.api.BeforeEach
+    void setup() {
+        when(authCookieService.readAccessToken(any()))
+                .thenReturn(java.util.Optional.empty());
     }
 
     @Test

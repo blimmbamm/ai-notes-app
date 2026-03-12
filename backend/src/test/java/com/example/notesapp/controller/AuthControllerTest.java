@@ -1,15 +1,13 @@
 package com.example.notesapp.controller;
 
-import com.example.notesapp.dto.AuthResponse;
 import com.example.notesapp.dto.LoginRequest;
-import com.example.notesapp.dto.LogoutRequest;
 import com.example.notesapp.dto.PasswordResetConfirmRequest;
 import com.example.notesapp.dto.PasswordResetRequest;
-import com.example.notesapp.dto.RefreshRequest;
 import com.example.notesapp.dto.SignupRequest;
 import com.example.notesapp.security.JwtAuthenticationFilter;
 import com.example.notesapp.service.AuthService;
 import com.example.notesapp.service.CustomUserDetailsService;
+import com.example.notesapp.security.AuthCookieService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +45,9 @@ class AuthControllerTest {
     @MockitoBean
     private CustomUserDetailsService customUserDetailsService;
 
+    @MockitoBean
+    private AuthCookieService authCookieService;
+
     @Test
     void signupReturnsCreatedAndMessage() throws Exception {
         SignupRequest request = new SignupRequest("user@example.com", "password123");
@@ -82,41 +83,40 @@ class AuthControllerTest {
     }
 
     @Test
-    void loginReturnsAuthResponseBody() throws Exception {
-        AuthResponse response = new AuthResponse("access", "refresh", "Bearer", 900);
-        when(authService.login(any(LoginRequest.class))).thenReturn(response);
+    void loginReturnsSuccessMessage() throws Exception {
+        when(authService.login(any(LoginRequest.class))).thenReturn(
+                new com.example.notesapp.dto.AuthResponse("access", "refresh", "Bearer", 900)
+        );
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest("user@example.com", "password123"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("access"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresInSeconds").value(900));
+                .andExpect(jsonPath("$.message").value("Login successful"));
     }
 
     @Test
-    void refreshDelegatesAndReturnsAuthResponseBody() throws Exception {
-        AuthResponse response = new AuthResponse("access2", "refresh2", "Bearer", 600);
-        when(authService.refresh(any(RefreshRequest.class))).thenReturn(response);
+    void refreshDelegatesAndReturnsSuccessMessage() throws Exception {
+        when(authService.refresh(any(String.class))).thenReturn(
+                new com.example.notesapp.dto.AuthResponse("access2", "refresh2", "Bearer", 600)
+        );
+        when(authCookieService.readRefreshToken(any())).thenReturn(java.util.Optional.of("rt-1"));
 
         mockMvc.perform(post("/api/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new RefreshRequest("rt-1"))))
+                        .cookie(new jakarta.servlet.http.Cookie("refresh_token", "rt-1")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("access2"));
+                .andExpect(jsonPath("$.message").value("Session refreshed"));
     }
 
     @Test
     void logoutReturnsMessage() throws Exception {
+        when(authCookieService.readRefreshToken(any())).thenReturn(java.util.Optional.of("rt-1"));
         mockMvc.perform(post("/api/auth/logout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new LogoutRequest("rt-1"))))
+                        .cookie(new jakarta.servlet.http.Cookie("refresh_token", "rt-1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Logged out"));
 
-        verify(authService).logout(any(LogoutRequest.class));
+        verify(authService).logout(any(String.class));
     }
 
     @Test

@@ -22,11 +22,10 @@ vi.mock("../api/authApi", () => ({
 
 vi.mock("../context/AuthContext", () => ({
   useAuth: () => ({
-    accessToken: "token",
-    refreshToken: "refresh",
-    setTokens: vi.fn(),
     logout: authLogout,
     isAuthenticated: true,
+    isLoading: false,
+    setAuthenticated: vi.fn(),
   }),
 }));
 
@@ -125,9 +124,6 @@ test("logs out from top bar", async () => {
 
   await user.click(await screen.findByRole("button", { name: "TopLogout" }));
 
-  await waitFor(() => expect(logoutMock).toHaveBeenCalledWith(
-    { refreshToken: "refresh" },
-    expect.anything(),
-  ));
+  await waitFor(() => expect(logoutMock).toHaveBeenCalledWith(expect.anything()));
   expect(authLogout).toHaveBeenCalled();
 });

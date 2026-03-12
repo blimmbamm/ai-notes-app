@@ -5,8 +5,8 @@ import { MemoryRouter } from "react-router-dom";
 import LoginPage from "./LoginPage";
 import { login } from "../api/authApi";
 
-const { setTokens } = vi.hoisted(() => ({
-  setTokens: vi.fn(),
+const { setAuthenticated } = vi.hoisted(() => ({
+  setAuthenticated: vi.fn(),
 }));
 
 vi.mock("../api/authApi", () => ({
@@ -15,11 +15,10 @@ vi.mock("../api/authApi", () => ({
 
 vi.mock("../context/AuthContext", () => ({
   useAuth: () => ({
-    accessToken: "",
-    refreshToken: "",
-    setTokens,
-    logout: vi.fn(),
     isAuthenticated: false,
+    isLoading: false,
+    setAuthenticated,
+    logout: vi.fn(),
   }),
 }));
 
@@ -46,9 +45,9 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-test("submits login credentials and stores tokens", async () => {
+test("submits login credentials and marks session as authenticated", async () => {
   const user = userEvent.setup();
-  loginMock.mockResolvedValue({ accessToken: "access", refreshToken: "refresh" });
+  loginMock.mockResolvedValue({ message: "Login successful" });
 
   renderLoginPage();
 
@@ -59,6 +58,6 @@ test("submits login credentials and stores tokens", async () => {
   await waitFor(() => expect(loginMock).toHaveBeenCalledWith({
     email: "user@example.com",
     password: "password123",
-  }, expect.anything()));
-  expect(setTokens).toHaveBeenCalledWith("access", "refresh");
+  }));
+  expect(setAuthenticated).toHaveBeenCalledWith(true);
 });

@@ -72,30 +72,20 @@ export default function NotesPage() {
     localStorage.setItem(NOTE_SORT_ORDER_KEY, sortOrder);
   }, [sortOrder]);
 
-  const authPayload = useMemo(
-    () => ({
-      accessToken: auth.accessToken,
-      refreshToken: auth.refreshToken,
-      setTokens: auth.setTokens,
-      logout: auth.logout,
-    }),
-    [auth.accessToken, auth.refreshToken, auth.setTokens, auth.logout],
-  );
-
   const notesQuery = useQuery({
     queryKey: ["notes"],
-    queryFn: () => getNotes(authPayload),
+    queryFn: () => getNotes(auth),
   });
 
   const tagCatalogQuery = useQuery({
     queryKey: ["tag-catalog"],
-    queryFn: () => getUserTags(authPayload),
+    queryFn: () => getUserTags(auth),
     staleTime: Infinity,
   });
 
 
   const createTagMutation = useMutation({
-    mutationFn: (name: string) => createTag(name, authPayload),
+    mutationFn: (name: string) => createTag(name, auth),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["tag-catalog"] });
     },
@@ -103,7 +93,7 @@ export default function NotesPage() {
 
   const renameTagMutation = useMutation({
     mutationFn: ({ currentName, newName }: { currentName: string; newName: string }) =>
-      renameTagApi(currentName, newName, authPayload),
+      renameTagApi(currentName, newName, auth),
     onSuccess: async (_data, variables) => {
       if (selectedTagParam === variables.currentName) {
         selectTag(variables.newName);
@@ -117,7 +107,7 @@ export default function NotesPage() {
   });
 
   const deleteTagMutation = useMutation({
-    mutationFn: (name: string) => deleteTagApi(name, authPayload),
+    mutationFn: (name: string) => deleteTagApi(name, auth),
     onSuccess: async (_data, deletedTagName) => {
       if (selectedTagParam === deletedTagName) {
         selectTag(null);
@@ -145,7 +135,7 @@ export default function NotesPage() {
   }, [notesQuery.data, selectedTagParam, sortOrder]);
 
   const createMutation = useMutation({
-    mutationFn: (payload: NoteInput) => createNote(payload, authPayload),
+    mutationFn: (payload: NoteInput) => createNote(payload, auth),
     onSuccess: async () => {
       closeNoteDialog();
       await queryClient.refetchQueries({ queryKey: ["notes"] });
@@ -154,7 +144,7 @@ export default function NotesPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: NoteInput }) =>
-      updateNote(id, payload, authPayload),
+      updateNote(id, payload, auth),
     onSuccess: async () => {
       closeNoteDialog();
       await queryClient.refetchQueries({ queryKey: ["notes"] });
@@ -176,7 +166,7 @@ export default function NotesPage() {
           colorHex,
           tagNames: note.tagNames,
         },
-        authPayload,
+        auth,
       ),
     onMutate: async ({ note, colorHex }) => {
       closePalette();
@@ -216,7 +206,7 @@ export default function NotesPage() {
           colorHex: note.colorHex,
           tagNames,
         },
-        authPayload,
+        auth,
       ).then((result) => ({ result, syncCatalog })),
     onMutate: async ({ note, tagNames }) => {
       await queryClient.cancelQueries({ queryKey: ["notes"] });
@@ -248,7 +238,7 @@ export default function NotesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteNote(id, authPayload),
+    mutationFn: (id: number) => deleteNote(id, auth),
     onSuccess: async () => {
       setDeleteCandidate(null);
       await queryClient.refetchQueries({ queryKey: ["notes"] });
@@ -256,7 +246,7 @@ export default function NotesPage() {
   });
 
   const logoutMutation = useMutation({
-    mutationFn: () => logoutApi({ refreshToken: auth.refreshToken }, authPayload),
+    mutationFn: () => logoutApi(auth),
     onSettled: () => auth.logout(),
   });
 
@@ -546,8 +536,6 @@ export default function NotesPage() {
     </Box>
   );
 }
-
-
 
 
 
