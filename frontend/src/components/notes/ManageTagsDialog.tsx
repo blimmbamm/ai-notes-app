@@ -165,15 +165,16 @@ export default function ManageTagsDialog({
     }
   }
 
-  return (
-    <Dialog open={open} onClose={handleDialogClose} fullWidth maxWidth="xs">
-      <DialogTitle>Manage tags</DialogTitle>
-      <DialogContent>
+    return (
+      <Dialog open={open} onClose={handleDialogClose} fullWidth maxWidth="xs" data-testid="manage-tags-dialog">
+        <DialogTitle>Manage tags</DialogTitle>
+        <DialogContent>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
           <TextField
             fullWidth
             size="small"
             label="New tag"
+            inputProps={{ "data-testid": "tag-new-input" }}
             value={newTagName}
             onChange={(event) => {
               setNewTagName(event.target.value);
@@ -194,6 +195,7 @@ export default function ManageTagsDialog({
             variant="outlined"
             size="small"
             startIcon={<AddIcon />}
+            data-testid="tag-add"
             onClick={() => void handleAddTag()}
             disabled={isSubmitting}
             sx={{ mt: 0.5, whiteSpace: "nowrap" }}
@@ -208,7 +210,7 @@ export default function ManageTagsDialog({
           </Alert>
         )}
 
-        <List disablePadding sx={{ mt: 1 }}>
+        <List disablePadding sx={{ mt: 1 }} data-testid="tags-list">
           {tags.map((tagName) => {
             const isEditingThis = editingTag === tagName;
 
@@ -216,24 +218,54 @@ export default function ManageTagsDialog({
               <ListItem
                 key={tagName}
                 disableGutters
+                data-testid="tag-row"
+                data-tag-name={tagName}
                 secondaryAction={
                   <Stack direction="row" spacing={0.5}>
                     {!isEditingThis && (
-                      <IconButton edge="end" size="small" onClick={() => startRename(tagName)} disabled={isSubmitting}>
+                      <IconButton
+                        edge="end"
+                        size="small"
+                        aria-label="Rename tag"
+                        data-testid="tag-rename"
+                        onClick={() => startRename(tagName)}
+                        disabled={isSubmitting}
+                      >
                         <EditIcon fontSize="small" />
                       </IconButton>
                     )}
                     {isEditingThis && (
                       <>
-                        <IconButton edge="end" size="small" onClick={() => void handleRename()} disabled={isSubmitting}>
+                        <IconButton
+                          edge="end"
+                          size="small"
+                          aria-label="Confirm rename"
+                          data-testid="tag-rename-confirm"
+                          onClick={() => void handleRename()}
+                          disabled={isSubmitting}
+                        >
                           <CheckIcon fontSize="small" />
                         </IconButton>
-                        <IconButton edge="end" size="small" onClick={cancelRename} disabled={isSubmitting}>
+                        <IconButton
+                          edge="end"
+                          size="small"
+                          aria-label="Cancel rename"
+                          data-testid="tag-rename-cancel"
+                          onClick={cancelRename}
+                          disabled={isSubmitting}
+                        >
                           <CloseIcon fontSize="small" />
                         </IconButton>
                       </>
                     )}
-                    <IconButton edge="end" size="small" onClick={() => void handleDelete(tagName)} disabled={isSubmitting}>
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      aria-label="Delete tag"
+                      data-testid="tag-delete"
+                      onClick={() => void handleDelete(tagName)}
+                      disabled={isSubmitting}
+                    >
                       <DeleteOutlineIcon fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -246,6 +278,7 @@ export default function ManageTagsDialog({
                       fullWidth
                       size="small"
                       value={editingValue}
+                      inputProps={{ "data-testid": "tag-edit-input" }}
                       onChange={(event) => {
                         setEditingValue(event.target.value);
                         if (renameError) {
@@ -282,4 +315,3 @@ export default function ManageTagsDialog({
     </Dialog>
   );
 }
-

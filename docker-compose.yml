@@ -9,6 +9,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notes -d notesdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   smtp4dev:
     image: rnwood/smtp4dev:v3
@@ -20,8 +25,10 @@ services:
     build:
       context: ./backend
     depends_on:
-      - postgres
-      - smtp4dev
+      postgres:
+        condition: service_healthy
+      smtp4dev: 
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notesdb
       SPRING_DATASOURCE_USERNAME: notes

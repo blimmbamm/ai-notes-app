@@ -9,7 +9,12 @@
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:install": "playwright install --with-deps",
+    "e2e:up": "docker compose -f ../docker-compose.yml up -d --build",
+    "e2e:down": "docker compose -f ../docker-compose.yml down"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -22,14 +27,18 @@
     "react-router-dom": "^6.30.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.51.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^25.4.0",
+    "@types/pg": "^8.18.0",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^2.1.9",
     "jsdom": "^25.0.1",
     "msw": "^2.12.10",
+    "pg": "^8.13.3",
     "vite": "^6.2.0",
     "vitest": "^2.1.9"
   }
