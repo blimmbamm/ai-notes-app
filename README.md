@@ -61,6 +61,23 @@ E2E_BASE_URL=http://localhost npm run e2e
 npm run e2e:down
 ```
 
+Use a separate test database locally (port 5433, db name `notesdb_e2e`):
+```bash
+cd frontend
+npm run e2e:up:testdb
+npm run e2e:testdb
+npm run e2e:down:testdb
+```
+
+Run backend locally against the test database:
+```bash
+cd backend
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5433/notesdb_e2e \
+SPRING_DATASOURCE_USERNAME=notes \
+SPRING_DATASOURCE_PASSWORD=notes \
+mvn spring-boot:run
+```
+
 Optional API override (skip proxies):
 ```bash
 E2E_API_BASE_URL=http://localhost:8080 npm run e2e

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: notesdb_e2e
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_e2e_data:/var/lib/postgresql/data
+
+  backend:
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notesdb_e2e
+
+volumes:
+  postgres_e2e_data:
