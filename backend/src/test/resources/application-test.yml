@@ -13,6 +13,11 @@ spring:
   flyway:
     enabled: false
 
+management:
+  health:
+    mail:
+      enabled: false
+
 app:
   frontend-url: http://frontend.test
   jwt:
