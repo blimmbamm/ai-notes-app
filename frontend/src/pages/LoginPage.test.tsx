@@ -54,10 +54,15 @@ test("submits login credentials and marks session as authenticated", async () =>
   await user.type(screen.getByLabelText("Email"), "user@example.com");
   await user.type(screen.getByLabelText("Password"), "password123");
   await user.click(screen.getByRole("button", { name: "Login" }));
-
-  await waitFor(() => expect(loginMock).toHaveBeenCalledWith({
-    email: "user@example.com",
-    password: "password123",
-  }));
+  
+  await waitFor(() => {
+    expect(loginMock).toHaveBeenCalledWith(
+      {
+        email: "user@example.com",
+        password: "password123",
+      },
+      expect.anything(),
+    );
+  });
   expect(setAuthenticated).toHaveBeenCalledWith(true);
 });
