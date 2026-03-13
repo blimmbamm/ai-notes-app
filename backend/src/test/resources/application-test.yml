@@ -32,3 +32,7 @@ app:
     access-token-minutes: 15
     refresh-token-days: 14
     reset-token-minutes: 60
+
+logging:
+  level: 
+    root: off

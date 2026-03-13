@@ -49,16 +49,12 @@ class JwtAuthenticationFilterTest {
         SecurityContextHolder.clearContext();
     }
 
-    @org.junit.jupiter.api.BeforeEach
-    void setup() {
-        when(authCookieService.readAccessToken(any()))
-                .thenReturn(java.util.Optional.empty());
-    }
-
     @Test
     void doFilterInternalSkipsWhenAuthorizationHeaderMissing() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
+        when(authCookieService.readAccessToken(any()))
+                .thenReturn(java.util.Optional.empty());
 
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 

@@ -71,20 +71,20 @@ class NotesSecurityIntegrationTest {
         String payload = "{\"title\":\"Title\",\"content\":\"Body\",\"colorHex\":\"#aabbcc\",\"tagNames\":[\"work\"]}";
 
         mockMvc.perform(get("/api/notes"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/notes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(put("/api/notes/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         mockMvc.perform(delete("/api/notes/1"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -211,7 +211,7 @@ class NotesSecurityIntegrationTest {
 
         mockMvc.perform(get("/api/notes")
                         .header("Authorization", bearerToken(token)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -222,7 +222,7 @@ class NotesSecurityIntegrationTest {
 
         mockMvc.perform(get("/api/notes")
                         .header("Authorization", bearerToken(tampered)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     private UserEntity createUser(String email, boolean enabled) {
